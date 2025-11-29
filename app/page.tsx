@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/client"
 import { Sparkles } from "lucide-react"
 import Leaderboard from "@/components/game/leaderboard"
+import { Analytics } from "@vercel/analytics/react"
 
 export default function Home() {
   const router = useRouter()
@@ -40,56 +41,59 @@ export default function Home() {
   }
 
   return (
-    <main
-      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
-      style={{
-        backgroundImage: "url('/welcomebg.png')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
-    >
-      {/* Dark overlay for better text readability */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+    <>
+      <main
+        className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+        style={{
+          backgroundImage: "url('/welcomebg.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
+        {/* Dark overlay for better text readability */}
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
-      {/* Character Images */}
-      <div className="absolute left-4 top-1/2 -translate-y-1/3 -translate-x-40 z-10 hidden xl:block">
-        <img src="/characters/claude_rap.png" alt="Claude" className="w-196 h-auto" />
-      </div>
-      <div className="absolute right-4 top-1/2 -translate-y-1/3 translate-x-40 z-10 hidden xl:block">
-        <img src="/characters/gpt_rap.png" alt="GPT" className="w-196 h-auto" />
-      </div>
+        {/* Character Images */}
+        <div className="absolute left-4 top-1/2 -translate-y-1/3 -translate-x-40 z-10 hidden xl:block">
+          <img src="/characters/claude_rap.png" alt="Claude" className="w-196 h-auto" />
+        </div>
+        <div className="absolute right-4 top-1/2 -translate-y-1/3 translate-x-40 z-10 hidden xl:block">
+          <img src="/characters/gpt_rap.png" alt="GPT" className="w-196 h-auto" />
+        </div>
 
-      <div className="max-w-2xl w-full space-y-8 py-8 relative z-10">
-        <div className="text-center space-y-4">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <h1 className="text-6xl font-black text-white" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.3)" }}>
-              VersusAI
-            </h1>
+        <div className="max-w-2xl w-full space-y-8 py-8 relative z-10">
+          <div className="text-center space-y-4">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <h1 className="text-6xl font-black text-white" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.3)" }}>
+                VersusAI
+              </h1>
+            </div>
+            <p className="text-lg text-white/80">How does this work?</p>
           </div>
-          <p className="text-lg text-white/80">How does this work?</p>
-        </div>
 
-        <div className="space-y-6">
-          {/* Start Watching Card */}
-          <Card className="border-0 shadow-2xl bg-transparent">
-            <CardHeader>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <Button
-                onClick={handleStartBattle}
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-700 hover:via-pink-700 hover:to-red-700 text-white font-bold text-xl py-8"
-              >
-                {isLoading ? "Starting..." : "LET'S GO! 🔥"}
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            {/* Start Watching Card */}
+            <Card className="border-0 shadow-2xl bg-transparent">
+              <CardHeader>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <Button
+                  onClick={handleStartBattle}
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-700 hover:via-pink-700 hover:to-red-700 text-white font-bold text-xl py-8"
+                >
+                  {isLoading ? "Starting..." : "LET'S GO! 🔥"}
+                </Button>
+              </CardContent>
+            </Card>
 
-          {/* Leaderboard */}
-          <Leaderboard />
+            {/* Leaderboard */}
+            <Leaderboard />
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+      <Analytics />
+    </>
   )
 }
