@@ -35,6 +35,7 @@ export default function BattleArena({ roomId, autostart = false }: BattleArenaPr
   const [error, setError] = useState<string | null>(null)
   const [currentRound, setCurrentRound] = useState<any>(null)
   const hasAutoStartedRef = useRef(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   // Auto-start battle when autostart prop is true
   useEffect(() => {
@@ -43,6 +44,48 @@ export default function BattleArena({ roomId, autostart = false }: BattleArenaPr
       startRapBattle()
     }
   }, [autostart, battleState])
+
+  // Initialize audio element
+  useEffect(() => {
+    audioRef.current = new Audio("/track1.mp3")
+    audioRef.current.loop = true
+    audioRef.current.volume = 0.3 // 30% volume so it doesn't overpower the voice
+
+    // Preload the audio to reduce gaps
+    audioRef.current.preload = "auto"
+
+    // Use the 'ended' event to create seamless loop by restarting immediately
+    audioRef.current.addEventListener('ended', () => {
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0
+        audioRef.current.play().catch(err => console.log("Loop restart failed:", err))
+      }
+    })
+
+    return () => {
+      // Cleanup audio on unmount
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current = null
+      }
+    }
+  }, [])
+
+  // Play/stop music based on battle state
+  useEffect(() => {
+    if (!audioRef.current) return
+
+    if (battleState === "model1" || battleState === "model2") {
+      // Start playing when a model is rapping
+      audioRef.current.play().catch((err) => {
+        console.log("Audio play failed:", err)
+      })
+    } else {
+      // Stop when not rapping (loading, voting, idle)
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0 // Reset to beginning
+    }
+  }, [battleState])
 
   const startRapBattle = async () => {
     try {
@@ -104,8 +147,8 @@ export default function BattleArena({ roomId, autostart = false }: BattleArenaPr
       // Store model 1 submission
       await storeSubmission(roundData.id, selectedModel1.id, verse1)
 
-      // Animate model 1's verse line by line
-      await animateVerse(verse1, setModel1Verse)
+      // Animate model 1's verse line by line with voice 0
+      await animateVerse(verse1, setModel1Verse, 0)
 
       // Wait 1 second before model 2 starts
       await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -117,8 +160,8 @@ export default function BattleArena({ roomId, autostart = false }: BattleArenaPr
       // Store model 2 submission
       await storeSubmission(roundData.id, selectedModel2.id, verse2)
 
-      // Animate model 2's verse line by line
-      await animateVerse(verse2, setModel2Verse)
+      // Animate model 2's verse line by line with voice 1
+      await animateVerse(verse2, setModel2Verse, 1)
 
       // Time to vote!
       setBattleState("voting")
@@ -137,7 +180,7 @@ export default function BattleArena({ roomId, autostart = false }: BattleArenaPr
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         modelId: model.id,
-        prompt: "Drop your hardest bars. Make it RHYME. 4 lines max. GO!",
+        prompt: "You are in a RAP BATTLE. Drop your hardest bars. Make it RHYME. I want your bars ONLY. 4 lines max. GO!",
         model: model.model_identifier,
         provider: model.provider,
         modelName: model.name,
@@ -177,24 +220,118 @@ export default function BattleArena({ roomId, autostart = false }: BattleArenaPr
     }
   }
 
+  const speakText = (text: string, voiceIndex: number = 0): void => {
+    // Check if speech synthesis is available
+    if (!window.speechSynthesis) {
+      return
+    }
+
+    // Fix pronunciation issues by replacing problematic text
+    let spokenText = text
+      // Fix "GPT-4o" to be pronounced correctly
+      .replace(/GPT-4o/gi, "G P T 4 oh")
+      .replace(/GPT-4/gi, "G P T 4")
+      .replace(/GPT/gi, "G P T")
+      // Fix "xAI" or "XAI" to be pronounced as "X A I"
+      .replace(/\bxAI\b/gi, "X A I")
+      .replace(/\bXAI\b/gi, "X A I")
+      // Fix other common model name pronunciation issues
+      .replace(/Claude/gi, "Clawed")
+      .replace(/Gemini/gi, "Gem In Eye")
+      .replace(/Llama/gi, "Llama")
+      .replace(/Grok/gi, "Grock")
+
+    const utterance = new SpeechSynthesisUtterance(spokenText)
+
+    // Set voice properties for faster rap-style delivery
+    utterance.rate = 1.2 // Much faster for rap flow
+    utterance.pitch = 1.0
+    utterance.volume = 1.0
+
+    // Try to get available voices and pick one based on index
+    const voices = window.speechSynthesis.getVoices()
+    if (voices.length > 0) {
+      // Try to pick different voices for variety
+      const voicesList = voices.filter(voice => voice.lang.startsWith('en'))
+      if (voicesList.length > 0) {
+        utterance.voice = voicesList[voiceIndex % voicesList.length]
+      }
+    }
+
+    window.speechSynthesis.speak(utterance)
+  }
+
   const animateVerse = async (
     verse: string,
     setVerse: React.Dispatch<React.SetStateAction<RapVerse>>,
+    voiceIndex: number = 0,
   ): Promise<void> => {
+    // BPM timing calculations
+    const BPM = 50
+    const beatsPerBar = 4
+    const msPerBeat = (60 / BPM) * 1000 // 1200ms per beat at 50 BPM
+    const msPerBar = msPerBeat * beatsPerBar // 4800ms per bar
+
     // Split verse into lines
     const lines = verse.split("\n").filter((line) => line.trim().length > 0)
 
-    // Animate each line with delay
-    for (let i = 0; i < lines.length; i++) {
-      setVerse({
-        lines: lines.slice(0, i + 1),
-        currentLineIndex: i,
-        isComplete: i === lines.length - 1,
-      })
-      await new Promise((resolve) => setTimeout(resolve, 2000)) // 2 seconds per line
+    // Start speaking the entire verse at once
+    speakText(verse, voiceIndex)
+
+    // Record start time for beat sync
+    const startTime = Date.now()
+
+    // Typing animation: show each character one by one
+    let currentLineIndex = 0
+    let currentText = ""
+
+    for (const line of lines) {
+      for (let charIndex = 0; charIndex <= line.length; charIndex++) {
+        currentText = line.substring(0, charIndex)
+
+        // Build the lines array with completed lines + current typing line
+        const displayLines = [
+          ...lines.slice(0, currentLineIndex),
+          currentText
+        ]
+
+        setVerse({
+          lines: displayLines,
+          currentLineIndex: currentLineIndex,
+          isComplete: false,
+        })
+
+        // Typing speed: 30ms per character
+        await new Promise((resolve) => setTimeout(resolve, 30))
+      }
+
+      currentLineIndex++
+
+      // Longer pause between lines (1 second = 1000ms)
+      await new Promise((resolve) => setTimeout(resolve, 1000))
     }
 
-    setVerse((prev) => ({ ...prev, isComplete: true }))
+    // Calculate how long the verse took
+    const verseEndTime = Date.now()
+    const verseDuration = verseEndTime - startTime
+
+    // Calculate how many bars this verse should take (round up to nearest bar)
+    // Each line is roughly 1 bar, but we'll round up total duration to nearest bar
+    const barsNeeded = Math.ceil(verseDuration / msPerBar)
+    const totalTimeNeeded = barsNeeded * msPerBar
+
+    // Add pause to align with the beat
+    const pauseNeeded = totalTimeNeeded - verseDuration
+
+    if (pauseNeeded > 0) {
+      await new Promise((resolve) => setTimeout(resolve, pauseNeeded))
+    }
+
+    setVerse({
+      lines: lines,
+      currentLineIndex: lines.length - 1,
+      isComplete: true,
+    })
   }
 
   const handleVote = async (modelId: string) => {
@@ -388,7 +525,7 @@ export default function BattleArena({ roomId, autostart = false }: BattleArenaPr
                       ? "w-146 drop-shadow-2xl"
                       : battleState === "model2"
                         ? "w-64"
-                        : "w-80"
+                        : "w-120"
                   }`}
                 />
                 {battleState === "model1" && !model1Verse.isComplete && (
@@ -411,7 +548,7 @@ export default function BattleArena({ roomId, autostart = false }: BattleArenaPr
                       ? "w-146 drop-shadow-2xl"
                       : battleState === "loading" || battleState === "model1"
                         ? "w-64"
-                        : "w-80"
+                        : "w-120"
                   }`}
                 />
                 {battleState === "model2" && !model2Verse.isComplete && (

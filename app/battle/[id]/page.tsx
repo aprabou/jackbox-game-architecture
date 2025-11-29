@@ -49,14 +49,34 @@ export default function BattlePage() {
 
   if (!battle)
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 flex items-center justify-center">
-        <div className="text-white text-2xl font-bold">Loading battle...</div>
+      <div
+        className="min-h-screen flex items-center justify-center relative"
+        style={{
+          backgroundImage: "url('/welcomebg.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+        <div className="text-white text-2xl font-bold relative z-10">Loading battle...</div>
       </div>
     )
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 p-4">
-      <div className="max-w-7xl mx-auto">
+    <main
+      className="min-h-screen p-4 relative overflow-hidden"
+      style={{
+        backgroundImage: "url('/googlebg.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
+      {/* Dark overlay for better text readability */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* Battle header */}
         <div className="mb-8 text-center">
           <h1 className="text-5xl font-black text-white mb-2" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.3)" }}>
