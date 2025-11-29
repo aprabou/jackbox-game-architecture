@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import BattleArena from "@/components/game/battle-arena"
 import BattleResults from "@/components/game/battle-results"
@@ -9,7 +9,9 @@ import Leaderboard from "@/components/game/leaderboard"
 
 export default function BattlePage() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const roomId = params.id as string
+  const autostart = searchParams.get("autostart") === "true"
   const supabase = createClient()
 
   const [battle, setBattle] = useState<any>(null)
@@ -32,7 +34,7 @@ export default function BattlePage() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "rooms", filter: `id=eq.${roomId}` },
-        (payload) => {
+        (payload: any) => {
           setBattle(payload.new)
           setGamePhase(payload.new.state)
         },
@@ -58,20 +60,15 @@ export default function BattlePage() {
         {/* Battle header */}
         <div className="mb-8 text-center">
           <h1 className="text-5xl font-black text-white mb-2" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.3)" }}>
-            ROUND {roundNumber + 1}
+            VerseAI
           </h1>
         </div>
 
         {/* Game phase rendering */}
-        {gamePhase === "lobby" && <BattleArena roomId={roomId} />}
-        {gamePhase === "battle" && <BattleArena roomId={roomId} />}
-        {gamePhase === "voting" && <BattleArena roomId={roomId} />}
+        {gamePhase === "lobby" && <BattleArena roomId={roomId} autostart={autostart} />}
+        {gamePhase === "battle" && <BattleArena roomId={roomId} autostart={false} />}
+        {gamePhase === "voting" && <BattleArena roomId={roomId} autostart={false} />}
         {gamePhase === "results" && <BattleResults roomId={roomId} onNext={() => setRoundNumber((r) => r + 1)} />}
-
-        {/* Leaderboard sidebar */}
-        <div className="mt-12">
-          <Leaderboard roomId={roomId} />
-        </div>
       </div>
     </main>
   )

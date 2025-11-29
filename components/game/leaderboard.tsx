@@ -54,9 +54,9 @@ export default function Leaderboard({ roomId }: LeaderboardProps) {
   }, [roomId, supabase])
 
   return (
-    <Card className="bg-white/95 backdrop-blur border-0 shadow-lg">
+    <Card className="bg-black/20 backdrop-blur border-1 shadow-lg">
       <CardHeader>
-        <CardTitle className="text-center text-2xl">🏆 Model Leaderboard</CardTitle>
+        <CardTitle className="text-center text-2xl text-white">🏆 Model Leaderboard</CardTitle>
       </CardHeader>
       <CardContent>
         {standings.length === 0 ? (

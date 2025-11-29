@@ -1,13 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/client"
 import { Mic, Loader2, AlertCircle, Home, RotateCcw } from "lucide-react"
 
 interface BattleArenaProps {
   roomId: string
+  autostart?: boolean
 }
 
 interface Model {
@@ -23,7 +24,7 @@ interface RapVerse {
   isComplete: boolean
 }
 
-export default function BattleArena({ roomId }: BattleArenaProps) {
+export default function BattleArena({ roomId, autostart = false }: BattleArenaProps) {
   const supabase = createClient()
   const [model1, setModel1] = useState<Model | null>(null)
   const [model2, setModel2] = useState<Model | null>(null)
@@ -33,6 +34,15 @@ export default function BattleArena({ roomId }: BattleArenaProps) {
   const [selectedWinner, setSelectedWinner] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [currentRound, setCurrentRound] = useState<any>(null)
+  const hasAutoStartedRef = useRef(false)
+
+  // Auto-start battle when autostart prop is true
+  useEffect(() => {
+    if (autostart && !hasAutoStartedRef.current && battleState === "idle") {
+      hasAutoStartedRef.current = true
+      startRapBattle()
+    }
+  }, [autostart, battleState])
 
   const startRapBattle = async () => {
     try {
@@ -181,7 +191,7 @@ export default function BattleArena({ roomId }: BattleArenaProps) {
         currentLineIndex: i,
         isComplete: i === lines.length - 1,
       })
-      await new Promise((resolve) => setTimeout(resolve, 1200)) // 1.2 seconds per line
+      await new Promise((resolve) => setTimeout(resolve, 2000)) // 2 seconds per line
     }
 
     setVerse((prev) => ({ ...prev, isComplete: true }))
@@ -234,8 +244,26 @@ export default function BattleArena({ roomId }: BattleArenaProps) {
     window.location.href = "/"
   }
 
+  // Helper function to get character image based on provider
+  const getCharacterImage = (provider: string, isRapping: boolean) => {
+    const providerLower = provider.toLowerCase()
+    const state = isRapping ? "rap" : "idle"
+
+    // Map provider names to character names
+    const providerMap: { [key: string]: string } = {
+      anthropic: "claude",
+      openai: "gpt",
+      google: "gemini",
+      xai: "grok",
+      meta: "llama",
+    }
+
+    const characterName = providerMap[providerLower] || "claude"
+    return `/characters/${characterName}_${state}.png`
+  }
+
   return (
-    <div className="space-y-8 max-w-6xl mx-auto">
+    <div className="space-y-8 max-w-7xl mx-auto">
       {/* Error Display */}
       {error && (
         <Card className="bg-red-50 border-red-200">
@@ -249,128 +277,188 @@ export default function BattleArena({ roomId }: BattleArenaProps) {
         </Card>
       )}
 
-      {/* Title */}
-      {battleState !== "idle" && (
-        <div className="text-center">
-          <h1 className="text-5xl font-black bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 bg-clip-text text-transparent">
-            🎤 AI RAP BATTLE 🎤
-          </h1>
-          <p className="text-xl text-gray-600 mt-2">
-            {model1?.name} vs {model2?.name}
-          </p>
+      {/* Battle Arena */}
+      {(model1 || model2) && (
+        <div className="relative">
+          {/* Verses Section - Top */}
+          {battleState === "voting" ? (
+            // Show both verses side by side during voting
+            <div className="grid md:grid-cols-2 gap-8 mb-8">
+              {/* Model 1 Verses */}
+              {model1 && (
+                <div className="flex flex-col items-center space-y-4">
+                  {/* Model Name */}
+                  <h3 className="text-3xl font-black text-white">{model1.name}</h3>
+
+                  {/* Rap Verses */}
+                  <div className="w-full min-h-[250px] bg-black/30 backdrop-blur-sm rounded-lg p-6">
+                    {model1Verse.lines.map((line, idx) => (
+                      <p
+                        key={idx}
+                        className="text-xl font-bold text-white mb-3"
+                        style={{ fontFamily: "monospace", textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}
+                      >
+                        {line}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Model 2 Verses */}
+              {model2 && (
+                <div className="flex flex-col items-center space-y-4">
+                  {/* Model Name */}
+                  <h3 className="text-3xl font-black text-white">{model2.name}</h3>
+
+                  {/* Rap Verses */}
+                  <div className="w-full min-h-[250px] bg-black/30 backdrop-blur-sm rounded-lg p-6">
+                    {model2Verse.lines.map((line, idx) => (
+                      <p
+                        key={idx}
+                        className="text-xl font-bold text-white mb-3"
+                        style={{ fontFamily: "monospace", textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}
+                      >
+                        {line}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            // Show only active model's verses during battle
+            <div className="flex justify-center mb-8">
+              {(battleState === "loading" || battleState === "model1") && model1 && (
+                <div className="flex flex-col items-center space-y-4 max-w-2xl w-full">
+                  {/* Model Name */}
+                  <h3 className="text-4xl font-black text-white">{model1.name}</h3>
+
+                  {/* Rap Verses */}
+                  <div className="w-full min-h-[250px] bg-black/30 backdrop-blur-sm rounded-lg p-6">
+                    {model1Verse.lines.length === 0 && battleState === "loading" && (
+                      <div className="flex items-center justify-center h-32">
+                        <Loader2 className="w-8 h-8 animate-spin text-white" />
+                      </div>
+                    )}
+                    {model1Verse.lines.map((line, idx) => (
+                      <p
+                        key={idx}
+                        className="text-2xl font-bold text-white mb-4 animate-fade-in"
+                        style={{ fontFamily: "monospace", textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}
+                      >
+                        {line}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {battleState === "model2" && model2 && (
+                <div className="flex flex-col items-center space-y-4 max-w-2xl w-full">
+                  {/* Model Name */}
+                  <h3 className="text-4xl font-black text-white">{model2.name}</h3>
+
+                  {/* Rap Verses */}
+                  <div className="w-full min-h-[250px] bg-black/30 backdrop-blur-sm rounded-lg p-6">
+                    {model2Verse.lines.map((line, idx) => (
+                      <p
+                        key={idx}
+                        className="text-2xl font-bold text-white mb-4 animate-fade-in"
+                        style={{ fontFamily: "monospace", textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}
+                      >
+                        {line}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Character Images - Bottom Edges */}
+          {model1 && (
+            <div className="fixed left-8 bottom-0 z-10">
+              <div className="relative">
+                <img
+                  src={getCharacterImage(model1.provider, battleState === "model1")}
+                  alt={model1.name}
+                  className={`h-auto transition-all duration-500 ${
+                    battleState === "loading" || battleState === "model1"
+                      ? "w-146 drop-shadow-2xl"
+                      : battleState === "model2"
+                        ? "w-64"
+                        : "w-80"
+                  }`}
+                />
+                {battleState === "model1" && !model1Verse.isComplete && (
+                  <div className="absolute top-4 right-4">
+                    <Mic className="w-12 h-12 text-purple-600 animate-pulse drop-shadow-lg" />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {model2 && (
+            <div className="fixed right-8 bottom-0 z-10">
+              <div className="relative">
+                <img
+                  src={getCharacterImage(model2.provider, battleState === "model2")}
+                  alt={model2.name}
+                  className={`h-auto transition-all duration-500 ${
+                    battleState === "model2"
+                      ? "w-146 drop-shadow-2xl"
+                      : battleState === "loading" || battleState === "model1"
+                        ? "w-64"
+                        : "w-80"
+                  }`}
+                />
+                {battleState === "model2" && !model2Verse.isComplete && (
+                  <div className="absolute top-4 left-4">
+                    <Mic className="w-12 h-12 text-pink-600 animate-pulse drop-shadow-lg" />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Battle Arena */}
-      <div className="grid md:grid-cols-2 gap-8">
-        {/* Model 1 */}
-        {model1 && (
-          <Card
-            className={`bg-gradient-to-br from-purple-50 to-purple-100 border-2 transition-all ${
-              battleState === "model1"
-                ? "border-purple-500 shadow-2xl ring-4 ring-purple-300 scale-105"
-                : selectedWinner === model1.id
-                  ? "border-yellow-400 shadow-2xl ring-4 ring-yellow-300"
-                  : "border-purple-200"
-            }`}
-          >
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-2xl font-bold text-purple-900">{model1.name}</CardTitle>
-                {battleState === "model1" && !model1Verse.isComplete && (
-                  <Mic className="w-6 h-6 text-purple-600 animate-pulse" />
-                )}
-              </div>
-              <p className="text-sm text-purple-700">Provider: {model1.provider}</p>
-            </CardHeader>
-            <CardContent>
-              <div className="min-h-48 p-6 bg-white/50 rounded-lg">
-                {model1Verse.lines.length === 0 && battleState === "loading" && (
-                  <div className="flex items-center justify-center h-32">
-                    <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
-                  </div>
-                )}
-                {model1Verse.lines.map((line, idx) => (
-                  <p
-                    key={idx}
-                    className="text-xl font-bold text-gray-800 mb-3 animate-fade-in"
-                    style={{ fontFamily: "monospace" }}
-                  >
-                    {line}
-                  </p>
-                ))}
-              </div>
-              {battleState === "voting" && (
-                <Button
-                  onClick={() => handleVote(model1.id)}
-                  className={`w-full mt-4 font-bold py-4 text-lg ${
-                    selectedWinner === model1.id
-                      ? "bg-yellow-400 hover:bg-yellow-500 text-gray-900"
-                      : "bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white"
-                  }`}
-                  disabled={selectedWinner !== null}
-                >
-                  {selectedWinner === model1.id ? "🏆 WINNER!" : "Vote for this model"}
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Model 2 */}
-        {model2 && (
-          <Card
-            className={`bg-gradient-to-br from-pink-50 to-pink-100 border-2 transition-all ${
-              battleState === "model2"
-                ? "border-pink-500 shadow-2xl ring-4 ring-pink-300 scale-105"
-                : selectedWinner === model2.id
-                  ? "border-yellow-400 shadow-2xl ring-4 ring-yellow-300"
-                  : "border-pink-200"
-            }`}
-          >
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-2xl font-bold text-pink-900">{model2.name}</CardTitle>
-                {battleState === "model2" && !model2Verse.isComplete && (
-                  <Mic className="w-6 h-6 text-pink-600 animate-pulse" />
-                )}
-              </div>
-              <p className="text-sm text-pink-700">Provider: {model2.provider}</p>
-            </CardHeader>
-            <CardContent>
-              <div className="min-h-48 p-6 bg-white/50 rounded-lg">
-                {model2Verse.lines.length === 0 && (battleState === "loading" || battleState === "model1") && (
-                  <div className="flex items-center justify-center h-32">
-                    <p className="text-pink-600 font-semibold">Waiting...</p>
-                  </div>
-                )}
-                {model2Verse.lines.map((line, idx) => (
-                  <p
-                    key={idx}
-                    className="text-xl font-bold text-gray-800 mb-3 animate-fade-in"
-                    style={{ fontFamily: "monospace" }}
-                  >
-                    {line}
-                  </p>
-                ))}
-              </div>
-              {battleState === "voting" && (
-                <Button
-                  onClick={() => handleVote(model2.id)}
-                  className={`w-full mt-4 font-bold py-4 text-lg ${
-                    selectedWinner === model2.id
-                      ? "bg-yellow-400 hover:bg-yellow-500 text-gray-900"
-                      : "bg-gradient-to-r from-pink-600 to-pink-700 hover:from-pink-700 hover:to-pink-800 text-white"
-                  }`}
-                  disabled={selectedWinner !== null}
-                >
-                  {selectedWinner === model2.id ? "🏆 WINNER!" : "Vote for this model"}
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      {/* Voting Section */}
+      {battleState === "voting" && (
+        <div className="flex flex-col items-center space-y-6 mt-12">
+          <h2 className="text-4xl font-black text-white">WHO WON?</h2>
+          <div className="flex gap-6">
+            {model1 && (
+              <Button
+                onClick={() => handleVote(model1.id)}
+                className={`font-bold py-6 px-12 text-xl ${
+                  selectedWinner === model1.id
+                    ? "bg-yellow-400 hover:bg-yellow-500 text-gray-900"
+                    : "bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white"
+                }`}
+                disabled={selectedWinner !== null}
+              >
+                {selectedWinner === model1.id ? `🏆 ${model1.name} WINS!` : model1.name}
+              </Button>
+            )}
+            {model2 && (
+              <Button
+                onClick={() => handleVote(model2.id)}
+                className={`font-bold py-6 px-12 text-xl ${
+                  selectedWinner === model2.id
+                    ? "bg-yellow-400 hover:bg-yellow-500 text-gray-900"
+                    : "bg-gradient-to-r from-pink-600 to-pink-700 hover:from-pink-700 hover:to-pink-800 text-white"
+                }`}
+                disabled={selectedWinner !== null}
+              >
+                {selectedWinner === model2.id ? `🏆 ${model2.name} WINS!` : model2.name}
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Action Buttons */}
       <div className="flex justify-center gap-4">
