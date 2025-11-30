@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/client"
-import { Mic, Loader2, AlertCircle, Home, RotateCcw } from "lucide-react"
+import { Loader2, AlertCircle, Home, RotateCcw } from "lucide-react"
 
 interface BattleArenaProps {
   roomId: string
@@ -528,11 +528,6 @@ export default function BattleArena({ roomId, autostart = false }: BattleArenaPr
                         : "w-120"
                   }`}
                 />
-                {battleState === "model1" && !model1Verse.isComplete && (
-                  <div className="absolute top-4 right-4">
-                    <Mic className="w-12 h-12 text-purple-600 animate-pulse drop-shadow-lg" />
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -551,11 +546,6 @@ export default function BattleArena({ roomId, autostart = false }: BattleArenaPr
                         : "w-120"
                   }`}
                 />
-                {battleState === "model2" && !model2Verse.isComplete && (
-                  <div className="absolute top-4 left-4">
-                    <Mic className="w-12 h-12 text-pink-600 animate-pulse drop-shadow-lg" />
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -615,7 +605,6 @@ export default function BattleArena({ roomId, autostart = false }: BattleArenaPr
             onClick={startRapBattle}
             className="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-700 hover:via-pink-700 hover:to-red-700 text-white font-black py-8 px-16 text-2xl shadow-2xl"
           >
-            <Mic className="w-8 h-8 mr-4" />
             START WATCHING 🔥
           </Button>
         )}
@@ -626,7 +615,6 @@ export default function BattleArena({ roomId, autostart = false }: BattleArenaPr
             onClick={startRapBattle}
             className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-8 px-12 text-xl"
           >
-            <Mic className="w-6 h-6 mr-3" />
             Try Again
           </Button>
         )}

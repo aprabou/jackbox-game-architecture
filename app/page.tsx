@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/client"
@@ -69,7 +70,11 @@ export default function Home() {
                 VersusAI
               </h1>
             </div>
-            <p className="text-lg text-white/80">How does this work?</p>
+            <Link href="/info">
+              <p className="text-lg text-white/80 hover:text-white cursor-pointer underline decoration-white/40 hover:decoration-white transition-colors">
+                How does this work?
+              </p>
+            </Link>
           </div>
 
           <div className="space-y-6">
