@@ -6,10 +6,10 @@ export async function POST(request: NextRequest) {
   try {
     const startTime = Date.now()
 
-    // Use Vercel AI Gateway
-    const gatewayKey = process.env.AI_GATEWAY_API_KEY
-    if (!gatewayKey) {
-      throw new Error("AI Gateway API key not configured")
+    // Use Vercel AI Gateway with OIDC token (automatically provided by Vercel)
+    const oidcToken = process.env.VERCEL_OIDC_TOKEN
+    if (!oidcToken) {
+      throw new Error("VERCEL_OIDC_TOKEN not available - ensure you're running on Vercel or using 'vercel dev'")
     }
 
     // Determine provider from the request or infer from model identifier
@@ -58,7 +58,7 @@ Keep it under 200 characters total. NO EXPLANATIONS - just pure bars. Go HARD.`
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${gatewayKey}`,
+        Authorization: `Bearer ${oidcToken}`,
       },
       body: JSON.stringify({
         model: gatewayModel,
