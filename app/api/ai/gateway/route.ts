@@ -32,7 +32,19 @@ export async function POST(request: NextRequest) {
     const startTime = Date.now()
 
     // Use Vercel AI Gateway with OIDC token (automatically provided by Vercel)
-    const oidcToken = process.env.VERCEL_OIDC_TOKEN
+    // Fallback to AI_GATEWAY_API_KEY for local development
+    const oidcToken = process.env.VERCEL_OIDC_TOKEN || process.env.AI_GATEWAY_API_KEY
+
+    // Log token availability for debugging
+    console.log('[AI Gateway] Token check:', {
+      hasVercelOIDC: !!process.env.VERCEL_OIDC_TOKEN,
+      hasAPIKey: !!process.env.AI_GATEWAY_API_KEY,
+      hasToken: !!oidcToken,
+      tokenPrefix: oidcToken?.substring(0, 20) + '...',
+      environment: process.env.NODE_ENV,
+      vercelEnv: process.env.VERCEL_ENV,
+    })
+
     if (!oidcToken) {
       throw new Error("VERCEL_OIDC_TOKEN not available - ensure you're running on Vercel or using 'vercel dev'")
     }
