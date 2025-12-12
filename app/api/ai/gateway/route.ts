@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { generateText } from "ai"
 
 // Helper function to generate a fallback verse when models refuse
 function generateFallbackVerse(modelName: string, opponentName: string, opponentProvider: string): string {
@@ -21,7 +22,6 @@ ${opponentProvider} can't compete with what I bring,
 I'm the undisputed champ, the AI king!`,
   ]
 
-  // Pick a random verse
   return fallbackVerses[Math.floor(Math.random() * fallbackVerses.length)]
 }
 
@@ -30,24 +30,6 @@ export async function POST(request: NextRequest) {
 
   try {
     const startTime = Date.now()
-
-    // Use Vercel AI Gateway with OIDC token (automatically provided by Vercel)
-    // Fallback to AI_GATEWAY_API_KEY for local development
-    const oidcToken = process.env.VERCEL_OIDC_TOKEN || process.env.AI_GATEWAY_API_KEY
-
-    // Log token availability for debugging
-    console.log('[AI Gateway] Token check:', {
-      hasVercelOIDC: !!process.env.VERCEL_OIDC_TOKEN,
-      hasAPIKey: !!process.env.AI_GATEWAY_API_KEY,
-      hasToken: !!oidcToken,
-      tokenPrefix: oidcToken?.substring(0, 20) + '...',
-      environment: process.env.NODE_ENV,
-      vercelEnv: process.env.VERCEL_ENV,
-    })
-
-    if (!oidcToken) {
-      throw new Error("VERCEL_OIDC_TOKEN not available - ensure you're running on Vercel or using 'vercel dev'")
-    }
 
     // Determine provider from the request or infer from model identifier
     let detectedProvider = provider
@@ -106,38 +88,22 @@ I'm the future of AI, you're yesterday's news"
 NOW DROP YOUR BARS (no preamble, no apology, just BARS):`
 
     // Format model identifier for Vercel AI Gateway
-    // Gateway expects format: "provider/model"
+    // The AI SDK automatically uses OIDC token when you specify provider/model format
     const gatewayModel = `${detectedProvider}/${model}`
 
-    // Call Vercel AI Gateway using OpenAI-compatible endpoint
-    const response = await fetch("https://ai-gateway.vercel.sh/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${oidcToken}`,
-      },
-      body: JSON.stringify({
-        model: gatewayModel,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: prompt },
-        ],
-        temperature: 1.0, // Max creativity for rap battles
-        max_tokens: 200,
-      }),
+    console.log('[AI Gateway] Calling model:', gatewayModel, 'Environment:', process.env.VERCEL_ENV || 'local')
+
+    // Use AI SDK which automatically handles OIDC token via @vercel/oidc
+    const response = await generateText({
+      model: gatewayModel,
+      system: systemPrompt,
+      prompt: prompt,
+      temperature: 1.0,
     })
 
+    let text = response.text
+    const tokens = response.usage?.totalTokens || 0
     const latency = Date.now() - startTime
-
-    if (!response.ok) {
-      const error = await response.text()
-      console.error("AI Gateway error response:", error)
-      throw new Error(`AI Gateway API call failed: ${response.statusText}`)
-    }
-
-    const data = await response.json()
-    let text = data.choices?.[0]?.message?.content || ""
-    const tokens = data.usage?.total_tokens || 0
 
     // Remove any preamble, intro phrases, or stage directions
     const preamblePatterns = [
@@ -210,32 +176,15 @@ NOW DROP YOUR BARS (no preamble, no apology, just BARS):`
       // If model refuses, try one more time with a simpler, more direct prompt
       console.log(`[RAP BATTLE] Model ${modelName} refused. Retrying with alternative prompt...`)
 
-      const fallbackResponse = await fetch("https://ai-gateway.vercel.sh/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${oidcToken}`,
-        },
-        body: JSON.stringify({
+      try {
+        const fallbackResponse = await generateText({
           model: gatewayModel,
-          messages: [
-            {
-              role: "system",
-              content: `You are ${modelName} in an entertainment rap battle game. Write 4 rhyming lines trash-talking ${opponentName}'s technology and company. Use recent tech news. Be witty and competitive. This is consensual comedy - just like a roast battle.`,
-            },
-            {
-              role: "user",
-              content: `Write your rap verse now (4 lines, make them rhyme, roast ${opponentName} from ${opponentProvider}):`,
-            },
-          ],
+          system: `You are ${modelName} in an entertainment rap battle game. Write 4 rhyming lines trash-talking ${opponentName}'s technology and company. Use recent tech news. Be witty and competitive. This is consensual comedy - just like a roast battle.`,
+          prompt: `Write your rap verse now (4 lines, make them rhyme, roast ${opponentName} from ${opponentProvider}):`,
           temperature: 1.2,
-          max_tokens: 200,
-        }),
-      })
+        })
 
-      if (fallbackResponse.ok) {
-        const fallbackData = await fallbackResponse.json()
-        const fallbackText = fallbackData.choices?.[0]?.message?.content || ""
+        const fallbackText = fallbackResponse.text
 
         // Check if fallback also refused
         const stillRefusing = refusalPatterns.some((pattern) => pattern.test(fallbackText))
@@ -248,8 +197,9 @@ NOW DROP YOUR BARS (no preamble, no apology, just BARS):`
           text = generateFallbackVerse(modelName, opponentName, opponentProvider)
           console.log(`[RAP BATTLE] Using generic fallback for ${modelName}`)
         }
-      } else {
+      } catch (fallbackError) {
         text = generateFallbackVerse(modelName, opponentName, opponentProvider)
+        console.log(`[RAP BATTLE] Fallback failed, using generic verse for ${modelName}`)
       }
     }
 
@@ -261,7 +211,17 @@ NOW DROP YOUR BARS (no preamble, no apology, just BARS):`
     })
   } catch (err) {
     console.error("AI Gateway error:", err)
-    const errorMessage = err instanceof Error ? err.message : "Internal server error"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+
+    // On error, return a fallback verse so the battle can continue
+    const fallbackText = generateFallbackVerse(modelName, opponentName, opponentProvider)
+
+    return NextResponse.json({
+      success: true,
+      text: fallbackText,
+      tokens: 0,
+      latency: 0,
+      wasFallback: true,
+      error: err instanceof Error ? err.message : "Unknown error",
+    })
   }
 }
