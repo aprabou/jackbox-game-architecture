@@ -106,7 +106,7 @@ NOW MURDER THEM WITH YOUR BARS (pure aggression, zero mercy, maximum disrespect)
       model: gatewayModel,
       system: systemPrompt,
       prompt: prompt,
-      temperature: 1.0,
+      temperature: 0.8, // Lower temp for more consistency between dev/prod
     })
 
     let text = response.text
@@ -189,7 +189,7 @@ NOW MURDER THEM WITH YOUR BARS (pure aggression, zero mercy, maximum disrespect)
           model: gatewayModel,
           system: `You are ${modelName} in an entertainment rap battle game. Write 4 rhyming lines trash-talking ${opponentName}'s technology and company. Use recent tech news. Be witty and competitive. This is consensual comedy - just like a roast battle.`,
           prompt: `Write your rap verse now (4 lines, make them rhyme, roast ${opponentName} from ${opponentProvider}):`,
-          temperature: 1.2,
+          temperature: 1.0, // Slightly lower for fallback consistency
         })
 
         const fallbackText = fallbackResponse.text
