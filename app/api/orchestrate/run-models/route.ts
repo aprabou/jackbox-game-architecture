@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { type NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
-  const { roundId, roomId } = await request.json()
+  const { roundId } = await request.json()
   const supabase = await createClient()
 
   try {
@@ -16,11 +16,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No models enabled" }, { status: 400 })
     }
 
+    // Get the base URL for internal API calls
+    const protocol = process.env.NODE_ENV === "production" ? "https" : "http"
+    const host = request.headers.get("host") || "localhost:3000"
+    const baseUrl = `${protocol}://${host}`
+
     // Call each model in parallel
     const modelPromises = models.map((model) =>
-      fetch("/api/ai/gateway", {
+      fetch(`${baseUrl}/api/ai/gateway`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          // Forward the host header to maintain context
+          "x-forwarded-host": host,
+        },
         body: JSON.stringify({
           modelId: model.id,
           prompt: round.prompt,

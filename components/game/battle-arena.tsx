@@ -9,6 +9,7 @@ import { Loader2, AlertCircle, Home, RotateCcw } from "lucide-react"
 interface BattleArenaProps {
   roomId: string
   autostart?: boolean
+  onNextRound?: () => void
 }
 
 interface Model {
@@ -24,7 +25,7 @@ interface RapVerse {
   isComplete: boolean
 }
 
-export default function BattleArena({ roomId, autostart = false }: BattleArenaProps) {
+export default function BattleArena({ roomId, autostart = false, onNextRound }: BattleArenaProps) {
   const supabase = createClient()
   const [model1, setModel1] = useState<Model | null>(null)
   const [model2, setModel2] = useState<Model | null>(null)
@@ -372,6 +373,9 @@ export default function BattleArena({ roomId, autostart = false }: BattleArenaPr
     setSelectedWinner(null)
     setCurrentRound(null)
 
+    // Notify parent component of round change (for background rotation)
+    onNextRound?.()
+
     // Automatically start the next battle
     startRapBattle()
   }
@@ -400,10 +404,10 @@ export default function BattleArena({ roomId, autostart = false }: BattleArenaPr
   }
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
+    <div className="space-y-8 max-w-7xl mx-auto px-4 pb-8">
       {/* Error Display */}
       {error && (
-        <Card className="bg-red-50 border-red-200">
+        <Card className="bg-red-50 border-red-200 relative z-20">
           <CardContent className="pt-6 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-red-600 mt-1 flex-shrink-0" />
             <div>
@@ -416,97 +420,57 @@ export default function BattleArena({ roomId, autostart = false }: BattleArenaPr
 
       {/* Battle Arena */}
       {(model1 || model2) && (
-        <div className="relative">
-          {/* Verses Section - Top */}
-          {battleState === "voting" ? (
-            // Show both verses side by side during voting
-            <div className="grid md:grid-cols-2 gap-8 mb-8">
-              {/* Model 1 Verses */}
-              {model1 && (
-                <div className="flex flex-col items-center space-y-4">
-                  {/* Model Name */}
-                  <h3 className="text-3xl font-black text-white">{model1.name}</h3>
-
-                  {/* Rap Verses */}
-                  <div className="w-full min-h-[250px] bg-black/30 backdrop-blur-sm rounded-lg p-6">
-                    {model1Verse.lines.map((line, idx) => (
-                      <p
-                        key={idx}
-                        className="text-xl font-bold text-white mb-3"
-                        style={{ fontFamily: "monospace", textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}
-                      >
-                        {line}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Model 2 Verses */}
-              {model2 && (
-                <div className="flex flex-col items-center space-y-4">
-                  {/* Model Name */}
-                  <h3 className="text-3xl font-black text-white">{model2.name}</h3>
-
-                  {/* Rap Verses */}
-                  <div className="w-full min-h-[250px] bg-black/30 backdrop-blur-sm rounded-lg p-6">
-                    {model2Verse.lines.map((line, idx) => (
-                      <p
-                        key={idx}
-                        className="text-xl font-bold text-white mb-3"
-                        style={{ fontFamily: "monospace", textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}
-                      >
-                        {line}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            // Show only active model's verses during battle
-            <div className="flex justify-center mb-8">
+        <div className="relative z-20">
+          {/* Verses Section - Only show during battle, not voting */}
+          {battleState !== "voting" && (
+            <div className="w-full mb-8">
+              {/* Model 1 (left character) - lyrics on the right */}
               {(battleState === "loading" || battleState === "model1") && model1 && (
-                <div className="flex flex-col items-center space-y-4 max-w-2xl w-full">
-                  {/* Model Name */}
-                  <h3 className="text-4xl font-black text-white">{model1.name}</h3>
+                <div className="flex justify-end pr-4 md:pr-8 lg:pr-16">
+                  <div className="flex flex-col items-start space-y-4 max-w-2xl w-full md:w-2/3 lg:w-1/2">
+                    {/* Model Name */}
+                    <h3 className="text-4xl font-black text-white">{model1.name}</h3>
 
-                  {/* Rap Verses */}
-                  <div className="w-full min-h-[250px] bg-black/30 backdrop-blur-sm rounded-lg p-6">
-                    {model1Verse.lines.length === 0 && battleState === "loading" && (
-                      <div className="flex items-center justify-center h-32">
-                        <Loader2 className="w-8 h-8 animate-spin text-white" />
-                      </div>
-                    )}
-                    {model1Verse.lines.map((line, idx) => (
-                      <p
-                        key={idx}
-                        className="text-2xl font-bold text-white mb-4 animate-fade-in"
-                        style={{ fontFamily: "monospace", textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}
-                      >
-                        {line}
-                      </p>
-                    ))}
+                    {/* Rap Verses */}
+                    <div className="w-full min-h-[250px] bg-black/30 backdrop-blur-sm rounded-lg p-6">
+                      {model1Verse.lines.length === 0 && battleState === "loading" && (
+                        <div className="flex items-center justify-center h-32">
+                          <Loader2 className="w-8 h-8 animate-spin text-white" />
+                        </div>
+                      )}
+                      {model1Verse.lines.map((line, idx) => (
+                        <p
+                          key={idx}
+                          className="text-2xl font-bold text-white mb-4 animate-fade-in"
+                          style={{ fontFamily: "monospace", textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}
+                        >
+                          {line}
+                        </p>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
 
+              {/* Model 2 (right character) - lyrics on the left */}
               {battleState === "model2" && model2 && (
-                <div className="flex flex-col items-center space-y-4 max-w-2xl w-full">
-                  {/* Model Name */}
-                  <h3 className="text-4xl font-black text-white">{model2.name}</h3>
+                <div className="flex justify-start pl-4 md:pl-8 lg:pl-16">
+                  <div className="flex flex-col items-start space-y-4 max-w-2xl w-full md:w-2/3 lg:w-1/2">
+                    {/* Model Name */}
+                    <h3 className="text-4xl font-black text-white">{model2.name}</h3>
 
-                  {/* Rap Verses */}
-                  <div className="w-full min-h-[250px] bg-black/30 backdrop-blur-sm rounded-lg p-6">
-                    {model2Verse.lines.map((line, idx) => (
-                      <p
-                        key={idx}
-                        className="text-2xl font-bold text-white mb-4 animate-fade-in"
-                        style={{ fontFamily: "monospace", textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}
-                      >
-                        {line}
-                      </p>
-                    ))}
+                    {/* Rap Verses */}
+                    <div className="w-full min-h-[250px] bg-black/30 backdrop-blur-sm rounded-lg p-6">
+                      {model2Verse.lines.map((line, idx) => (
+                        <p
+                          key={idx}
+                          className="text-2xl font-bold text-white mb-4 animate-fade-in"
+                          style={{ fontFamily: "monospace", textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}
+                        >
+                          {line}
+                        </p>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
@@ -515,17 +479,19 @@ export default function BattleArena({ roomId, autostart = false }: BattleArenaPr
 
           {/* Character Images - Bottom Edges */}
           {model1 && (
-            <div className="fixed left-8 bottom-0 z-10">
+            <div className="fixed left-2 sm:left-4 md:left-8 bottom-0 z-10">
               <div className="relative">
                 <img
                   src={getCharacterImage(model1.provider, battleState === "model1")}
                   alt={model1.name}
                   className={`h-auto transition-all duration-500 ${
                     battleState === "loading" || battleState === "model1"
-                      ? "w-146 drop-shadow-2xl"
+                      ? "w-24 sm:w-32 md:w-40 lg:w-146 drop-shadow-2xl"
                       : battleState === "model2"
-                        ? "w-64"
-                        : "w-120"
+                        ? "w-16 sm:w-20 md:w-32 lg:w-64"
+                        : battleState === "voting"
+                          ? "w-48 sm:w-64 md:w-80 lg:w-[36rem] xl:w-[42rem] drop-shadow-2xl"
+                          : "w-20 sm:w-24 md:w-32 lg:w-120"
                   }`}
                 />
               </div>
@@ -533,17 +499,19 @@ export default function BattleArena({ roomId, autostart = false }: BattleArenaPr
           )}
 
           {model2 && (
-            <div className="fixed right-8 bottom-0 z-10">
+            <div className="fixed right-2 sm:right-4 md:right-8 bottom-0 z-10">
               <div className="relative">
                 <img
                   src={getCharacterImage(model2.provider, battleState === "model2")}
                   alt={model2.name}
                   className={`h-auto transition-all duration-500 ${
                     battleState === "model2"
-                      ? "w-146 drop-shadow-2xl"
+                      ? "w-24 sm:w-32 md:w-40 lg:w-146 drop-shadow-2xl"
                       : battleState === "loading" || battleState === "model1"
-                        ? "w-64"
-                        : "w-120"
+                        ? "w-16 sm:w-20 md:w-32 lg:w-64"
+                        : battleState === "voting"
+                          ? "w-48 sm:w-64 md:w-80 lg:w-[36rem] xl:w-[42rem] drop-shadow-2xl"
+                          : "w-20 sm:w-24 md:w-32 lg:w-120"
                   }`}
                 />
               </div>
@@ -554,7 +522,7 @@ export default function BattleArena({ roomId, autostart = false }: BattleArenaPr
 
       {/* Voting Section */}
       {battleState === "voting" && (
-        <div className="flex flex-col items-center space-y-6 mt-12">
+        <div className="flex flex-col items-center space-y-6 mt-12 relative z-20">
           <h2 className="text-4xl font-black text-white">WHO WON?</h2>
           <div className="flex gap-6">
             {model1 && (
@@ -588,7 +556,7 @@ export default function BattleArena({ roomId, autostart = false }: BattleArenaPr
       )}
 
       {/* Action Buttons */}
-      <div className="flex justify-center gap-4">
+      <div className="flex justify-center gap-4 relative z-20">
         {/* Home Button - Always visible */}
         <Button
           onClick={handleGoHome}

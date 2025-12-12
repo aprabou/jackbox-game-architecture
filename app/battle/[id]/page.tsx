@@ -7,6 +7,16 @@ import BattleArena from "@/components/game/battle-arena"
 import BattleResults from "@/components/game/battle-results"
 import Leaderboard from "@/components/game/leaderboard"
 
+// Available background images
+const BACKGROUNDS = [
+  "/claudebg.png",
+  "/geminibg.png",
+  "/googlebg.png",
+  "/gptbg.png",
+  "/grokbg.png",
+  "/vscodebg.png",
+]
+
 export default function BattlePage() {
   const params = useParams()
   const searchParams = useSearchParams()
@@ -17,6 +27,13 @@ export default function BattlePage() {
   const [battle, setBattle] = useState<any>(null)
   const [gamePhase, setGamePhase] = useState("lobby") // lobby, battle, voting, results, finished
   const [roundNumber, setRoundNumber] = useState(0)
+  const [backgroundImage, setBackgroundImage] = useState<string>(BACKGROUNDS[0])
+
+  // Randomly select a background on mount and on round change
+  useEffect(() => {
+    const randomBg = BACKGROUNDS[Math.floor(Math.random() * BACKGROUNDS.length)]
+    setBackgroundImage(randomBg)
+  }, [roundNumber])
 
   useEffect(() => {
     const fetchBattle = async () => {
@@ -52,7 +69,7 @@ export default function BattlePage() {
       <div
         className="min-h-screen flex items-center justify-center relative"
         style={{
-          backgroundImage: "url('/welcomebg.png')",
+          backgroundImage: `url('${backgroundImage}')`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
@@ -67,7 +84,7 @@ export default function BattlePage() {
     <main
       className="min-h-screen p-4 relative overflow-hidden"
       style={{
-        backgroundImage: "url('/googlebg.png')",
+        backgroundImage: `url('${backgroundImage}')`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
@@ -85,9 +102,15 @@ export default function BattlePage() {
         </div>
 
         {/* Game phase rendering */}
-        {gamePhase === "lobby" && <BattleArena roomId={roomId} autostart={autostart} />}
-        {gamePhase === "battle" && <BattleArena roomId={roomId} autostart={false} />}
-        {gamePhase === "voting" && <BattleArena roomId={roomId} autostart={false} />}
+        {gamePhase === "lobby" && (
+          <BattleArena roomId={roomId} autostart={autostart} onNextRound={() => setRoundNumber((r) => r + 1)} />
+        )}
+        {gamePhase === "battle" && (
+          <BattleArena roomId={roomId} autostart={false} onNextRound={() => setRoundNumber((r) => r + 1)} />
+        )}
+        {gamePhase === "voting" && (
+          <BattleArena roomId={roomId} autostart={false} onNextRound={() => setRoundNumber((r) => r + 1)} />
+        )}
         {gamePhase === "results" && <BattleResults roomId={roomId} onNext={() => setRoundNumber((r) => r + 1)} />}
       </div>
     </main>
