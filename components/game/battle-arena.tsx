@@ -35,6 +35,8 @@ export default function BattleArena({ roomId, autostart = false, onNextRound }: 
   const [selectedWinner, setSelectedWinner] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [currentRound, setCurrentRound] = useState<any>(null)
+  const [feedbackNotes, setFeedbackNotes] = useState<string>("")
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState<boolean>(false)
   const hasAutoStartedRef = useRef(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
@@ -364,6 +366,24 @@ export default function BattleArena({ roomId, autostart = false, onNextRound }: 
     }
   }
 
+  const handleSubmitFeedback = async () => {
+    if (!feedbackNotes.trim() || feedbackSubmitted) return
+
+    try {
+      await supabase.from("feedback").insert({
+        round_id: currentRound.id,
+        voter_session_id: "anonymous",
+        winner_model_id: selectedWinner,
+        notes: feedbackNotes.trim(),
+      })
+
+      setFeedbackSubmitted(true)
+      console.log("[RAP BATTLE] Feedback submitted successfully")
+    } catch (err) {
+      console.error("[RAP BATTLE] Failed to submit feedback:", err)
+    }
+  }
+
   const handleNextRound = () => {
     // Reset state and immediately start a new battle
     setModel1(null)
@@ -372,6 +392,8 @@ export default function BattleArena({ roomId, autostart = false, onNextRound }: 
     setModel2Verse({ lines: [], currentLineIndex: 0, isComplete: false })
     setSelectedWinner(null)
     setCurrentRound(null)
+    setFeedbackNotes("")
+    setFeedbackSubmitted(false)
 
     // Notify parent component of round change (for background rotation)
     onNextRound?.()
@@ -552,6 +574,39 @@ export default function BattleArena({ roomId, autostart = false, onNextRound }: 
               </Button>
             )}
           </div>
+
+          {/* Feedback Form - Show after voting */}
+          {selectedWinner && (
+            <div className="w-full max-w-xl mt-8">
+              <Card className="bg-black/30 backdrop-blur-sm border-white/20">
+                <CardContent className="pt-6">
+                  <div className="space-y-4">
+                    <label className="block text-white font-semibold text-lg">
+                      Quick Feedback (Optional)
+                    </label>
+                    <textarea
+                      value={feedbackNotes}
+                      onChange={(e) => setFeedbackNotes(e.target.value)}
+                      placeholder="Any thoughts on this battle? What made it great or not so great?"
+                      className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 min-h-[100px] resize-none"
+                      disabled={feedbackSubmitted}
+                    />
+                    <Button
+                      onClick={handleSubmitFeedback}
+                      disabled={!feedbackNotes.trim() || feedbackSubmitted}
+                      className={`w-full font-bold py-3 text-lg ${
+                        feedbackSubmitted
+                          ? "bg-green-600 hover:bg-green-600"
+                          : "bg-blue-600 hover:bg-blue-700"
+                      } text-white`}
+                    >
+                      {feedbackSubmitted ? "✓ Feedback submitted, thank you!" : "Submit Feedback"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       )}
 
