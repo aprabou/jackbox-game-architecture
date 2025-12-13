@@ -150,8 +150,8 @@ export default function BattleArena({ roomId, autostart = false, onNextRound }: 
       // Store model 1 submission
       await storeSubmission(roundData.id, selectedModel1.id, verse1)
 
-      // Animate model 1's verse line by line with voice 0
-      await animateVerse(verse1, setModel1Verse, 0)
+      // Animate model 1's verse line by line with Web Speech API (voice 0)
+      await animateVerse(verse1, setModel1Verse)
 
       // Wait 1 second before model 2 starts
       await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -163,8 +163,8 @@ export default function BattleArena({ roomId, autostart = false, onNextRound }: 
       // Store model 2 submission
       await storeSubmission(roundData.id, selectedModel2.id, verse2)
 
-      // Animate model 2's verse line by line with voice 1
-      await animateVerse(verse2, setModel2Verse, 1)
+      // Animate model 2's verse line by line with Web Speech API (same voice 0)
+      await animateVerse(verse2, setModel2Verse)
 
       // Time to vote!
       setBattleState("voting")
@@ -223,7 +223,7 @@ export default function BattleArena({ roomId, autostart = false, onNextRound }: 
     }
   }
 
-  const speakText = (text: string, voiceIndex: number = 0): void => {
+  const speakText = (text: string): void => {
     // Check if speech synthesis is available
     if (!window.speechSynthesis) {
       return
@@ -251,13 +251,13 @@ export default function BattleArena({ roomId, autostart = false, onNextRound }: 
     utterance.pitch = 1.0
     utterance.volume = 1.0
 
-    // Try to get available voices and pick one based on index
+    // Try to get available voices - always use first voice (same for both models)
     const voices = window.speechSynthesis.getVoices()
     if (voices.length > 0) {
-      // Try to pick different voices for variety
       const voicesList = voices.filter(voice => voice.lang.startsWith('en'))
       if (voicesList.length > 0) {
-        utterance.voice = voicesList[voiceIndex % voicesList.length]
+        // Always use the same voice (index 0) for consistency
+        utterance.voice = voicesList[0]
       }
     }
 
@@ -267,7 +267,6 @@ export default function BattleArena({ roomId, autostart = false, onNextRound }: 
   const animateVerse = async (
     verse: string,
     setVerse: React.Dispatch<React.SetStateAction<RapVerse>>,
-    voiceIndex: number = 0,
   ): Promise<void> => {
     // BPM timing calculations
     const BPM = 50
@@ -278,8 +277,9 @@ export default function BattleArena({ roomId, autostart = false, onNextRound }: 
     // Split verse into lines
     const lines = verse.split("\n").filter((line) => line.trim().length > 0)
 
-    // Start speaking the entire verse at once
-    speakText(verse, voiceIndex)
+    // Start playing the Web Speech API audio
+    // Audio plays independently while text animates
+    speakText(verse)
 
     // Record start time for beat sync
     const startTime = Date.now()

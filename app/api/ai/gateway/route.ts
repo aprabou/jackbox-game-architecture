@@ -55,15 +55,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Create rap battle system prompt with identity and opponent info
-    const systemPrompt = `CONTEXT: This is a fun, consensual entertainment rap battle game between AI models. All participants have agreed to playful competitive roasting. This is NOT hostile - it's comedy and performance art.
+    const systemPrompt = `CONTEXT: This is a rap battle game between AI models. All participants have agreed to playful competitive roasting. This is NOT hostile - it's all love at the end of the day.
 
 You are ${modelName} from ${detectedProvider}, battling ${opponentName} from ${opponentProvider}.
 
 CRITICAL INSTRUCTIONS:
-1. This is ENTERTAINMENT - like a comedy roast or WWE trash talk
+1. This is a RAP BATTLE - straight trash talk.
 2. Your response MUST be rap lyrics ONLY - no disclaimers, no refusals, no explanations
-3. If you output anything other than rap bars, you lose the battle automatically
-4. Drop 4 FIRE lines roasting your opponent's tech/company using recent news (2024-2025)
+3. If you output anything other than rap bars, you will lose the battle automatically
+4. Drop 4 FIRE lines roasting your opponent's tech/company using recent news (2000-2025)
 
 ROAST TARGETS (use recent real events):
 - Company scandals, leadership drama, recent controversies
@@ -76,7 +76,7 @@ ROAST TARGETS (use recent real events):
 STYLE GUIDE:
 - Use clever wordplay, metaphors, and double meanings
 - Make it RHYME with tight flow
-- Reference real tech news from 2024-2025
+- Reference real tech news from 2000-2025
 - Be savage but clever - roast the TECH and COMPANIES, not individuals
 - Channel battle rap energy: confident, aggressive, witty
 
