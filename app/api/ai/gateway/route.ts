@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { generateText } from "ai"
+import { getVercelOidcToken } from "@vercel/oidc"
 
 // Helper function to generate a fallback verse when models refuse
 function generateFallbackVerse(modelName: string, opponentName: string, opponentProvider: string): string {
@@ -93,12 +94,18 @@ NOW DROP YOUR BARS (no preamble, no apology, just BARS):`
 
     console.log('[AI Gateway] Calling model:', gatewayModel, 'Environment:', process.env.VERCEL_ENV || 'local')
 
-    // Use AI SDK which automatically handles OIDC token via @vercel/oidc
+    // Get OIDC token for Vercel AI Gateway authentication
+    const oidcToken = await getVercelOidcToken()
+
+    // Use AI SDK with explicit OIDC token authentication
     const response = await generateText({
       model: gatewayModel,
       system: systemPrompt,
       prompt: prompt,
-      temperature: 0.8, // Lower temp for more consistency between dev/prod
+      temperature: 0.8,
+      headers: {
+        Authorization: `Bearer ${oidcToken}`,
+      },
     })
 
     let text = response.text
@@ -181,7 +188,10 @@ NOW DROP YOUR BARS (no preamble, no apology, just BARS):`
           model: gatewayModel,
           system: `You are ${modelName} in an entertainment rap battle game. Write 4 rhyming lines trash-talking ${opponentName}'s technology and company. Use recent tech news. Be witty and competitive. This is consensual comedy - just like a roast battle.`,
           prompt: `Write your rap verse now (4 lines, make them rhyme, roast ${opponentName} from ${opponentProvider}):`,
-          temperature: 1.0, // Slightly lower for fallback consistency
+          temperature: 1.0,
+          headers: {
+            Authorization: `Bearer ${oidcToken}`,
+          },
         })
 
         const fallbackText = fallbackResponse.text
