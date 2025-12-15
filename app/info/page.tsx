@@ -19,7 +19,7 @@ export default function InfoPage() {
       {/* Dark overlay for better text readability */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
-      <div className="max-w-3xl w-full space-y-8 py-8 relative z-10">
+      <div className="subtext max-w-3xl w-full space-y-8 py-8 relative z-10">
         {/* Back Button */}
         <Link href="/">
           <Button variant="outline" className="mb-4">
@@ -30,7 +30,7 @@ export default function InfoPage() {
 
         {/* Title */}
         <div className="text-center space-y-4 mb-8">
-          <h1 className="text-5xl font-black text-white" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.3)" }}>
+          <h1 className="header text-5xl font-black text-white" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.3)" }}>
             How VersusAI Works
           </h1>
         </div>
@@ -39,8 +39,8 @@ export default function InfoPage() {
         <div className="space-y-6">
           <Card className="border-0 shadow-2xl bg-white/10 backdrop-blur-md">
             <CardContent className="pt-6">
-              <h2 className="text-2xl font-bold text-white mb-4">🎤 What is VersusAI?</h2>
-              <p className="text-white/90 text-lg leading-relaxed">
+              <h2 className="header text-2xl font-bold text-white mb-4">🎤 What is VersusAI?</h2>
+              <p className="subtext text-white/90 text-lg leading-relaxed">
                 VersusAI is an AI rap battle arena where different AI models face off against each other in epic lyrical showdowns.
                 Watch as AI models like GPT-4, Claude, Gemini, and others drop their hardest bars and compete for supremacy!
               </p>
@@ -49,7 +49,7 @@ export default function InfoPage() {
 
           <Card className="border-0 shadow-2xl bg-white/10 backdrop-blur-md">
             <CardContent className="pt-6">
-              <h2 className="text-2xl font-bold text-white mb-4">🔥 How Does It Work?</h2>
+              <h2 className="header text-2xl font-bold text-white mb-4">🔥 How Does It Work?</h2>
               <div className="space-y-4 text-white/90 text-lg">
                 <div>
                   <span className="font-bold text-purple-300">1. Click "LET'S GO!"</span>
@@ -73,7 +73,7 @@ export default function InfoPage() {
 
           <Card className="border-0 shadow-2xl bg-white/10 backdrop-blur-md">
             <CardContent className="pt-6">
-              <h2 className="text-2xl font-bold text-white mb-4">🎵 Features</h2>
+              <h2 className="header text-2xl font-bold text-white mb-4">🎵 Features</h2>
               <ul className="space-y-3 text-white/90 text-lg">
                 <li className="flex items-start">
                   <span className="text-green-400 mr-2">✓</span>
@@ -101,7 +101,7 @@ export default function InfoPage() {
 
           <Card className="border-0 shadow-2xl bg-white/10 backdrop-blur-md">
             <CardContent className="pt-6">
-              <h2 className="text-2xl font-bold text-white mb-4">💡 Pro Tips</h2>
+              <h2 className="header text-2xl font-bold text-white mb-4">💡 Pro Tips</h2>
               <ul className="space-y-2 text-white/90 text-lg">
                 <li>• Turn up your volume to hear the AI models rap their verses</li>
                 <li>• Watch the character animations - they get bigger when it's their turn!</li>
@@ -113,7 +113,7 @@ export default function InfoPage() {
 
           <Card className="border-0 shadow-2xl bg-white/10 backdrop-blur-md">
             <CardContent className="pt-6">
-              <h2 className="text-2xl font-bold text-white mb-4">⚙️ Technical Architecture</h2>
+              <h2 className="header text-2xl font-bold text-white mb-4">⚙️ Technical Architecture</h2>
               <div className="space-y-4 text-white/90 text-lg">
                 <div>
                   <span className="font-bold text-blue-300">Vercel AI Gateway</span>
@@ -158,7 +158,7 @@ export default function InfoPage() {
 
           <Card className="border-0 shadow-2xl bg-white/10 backdrop-blur-md">
             <CardContent className="pt-6">
-              <h2 className="text-2xl font-bold text-white mb-4">👨‍💻 Created By Ashwin</h2>
+              <h2 className="header text-2xl font-bold text-white mb-4">👨‍💻 Created By Ashwin</h2>
               <div className="flex gap-4 justify-center">
                 <a
                   href="https://github.com/aprabou"
@@ -185,7 +185,7 @@ export default function InfoPage() {
           {/* Back to Home Button */}
           <div className="flex justify-center pt-4">
             <Link href="/">
-              <Button className="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-700 hover:via-pink-700 hover:to-red-700 text-white font-bold text-xl py-6 px-12">
+              <Button className="header bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-700 hover:via-pink-700 hover:to-red-700 text-white font-bold text-xl py-6 px-12">
                 Start Watching Battles! 🔥
               </Button>
             </Link>

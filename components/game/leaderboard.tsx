@@ -48,12 +48,7 @@ const getModelColors = (provider: string) => {
     xai: {
       bg: "bg-black",
       text: "text-white",
-      border: "border-black",
-    },
-    groq: {
-      bg: "bg-[#92AEFF]",
-      text: "text-black",
-      border: "border-[#92AEFF]",
+      border: "border-white",
     },
     meta: {
       bg: "bg-white",
@@ -119,7 +114,7 @@ export default function Leaderboard({ roomId }: LeaderboardProps) {
   return (
     <Card className="bg-black/20 backdrop-blur border-1 shadow-lg">
       <CardHeader>
-        <CardTitle className="text-center text-2xl text-white">🏆 Model Leaderboard</CardTitle>
+        <CardTitle className="subtext text-center text-2xl text-white">Model Leaderboard</CardTitle>
       </CardHeader>
       <CardContent>
         {standings.length === 0 ? (
@@ -144,20 +139,20 @@ export default function Leaderboard({ roomId }: LeaderboardProps) {
                     isTop3 ? "scale-105" : ""
                   }`}
                 >
-                  <div className="flex items-center gap-4">
-                    <span
-                      className={`text-3xl font-black ${
+                  <div className="header flex items-center gap-4">
+                    <div
+                      className={`flex items-center justify-center ${isTop3 ? "w-16 h-16 text-2xl" : "w-12 h-12 text-xl"} font-black rounded-full ${
                         idx === 0
-                          ? "text-yellow-600 drop-shadow-md"
+                          ? "bg-gradient-to-br from-yellow-300 via-yellow-400 to-yellow-600 text-yellow-900 shadow-lg shadow-yellow-500/50 ring-4 ring-yellow-400/30"
                           : idx === 1
-                            ? "text-gray-600 drop-shadow-md"
+                            ? "bg-gradient-to-br from-gray-200 via-gray-300 to-gray-500 text-gray-800 shadow-lg shadow-gray-400/50 ring-4 ring-gray-300/30"
                             : idx === 2
-                              ? "text-orange-600 drop-shadow-md"
-                              : colors.text
+                              ? "bg-gradient-to-br from-orange-300 via-orange-400 to-orange-600 text-orange-900 shadow-lg shadow-orange-500/50 ring-4 ring-orange-400/30"
+                              : `${colors.bg} ${colors.text} border-2 ${colors.border}`
                       }`}
                     >
-                      {idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `#${idx + 1}`}
-                    </span>
+                      {idx + 1}
+                    </div>
                     <img
                       src={getLogoImage(model.provider)}
                       alt={model.name}
@@ -167,14 +162,14 @@ export default function Leaderboard({ roomId }: LeaderboardProps) {
                     />
                     <div>
                       <p className={`font-bold ${isTop3 ? "text-xl" : "text-lg"} ${colors.text}`}>{model.name}</p>
-                      <p className={`text-xs ${colors.text} opacity-70`}>{model.provider}</p>
+                      <p className={`subtext text-xs ${colors.text} opacity-70`}>{model.provider}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className={`font-black ${isTop3 ? "text-3xl" : "text-2xl"} ${colors.text}`}>
+                    <p className={`subtext font-black ${isTop3 ? "text-3xl" : "text-2xl"} ${colors.text}`}>
                       {model.totalVotes}
                     </p>
-                    <p className={`text-xs ${colors.text} opacity-70`}>votes</p>
+                    <p className={`subtext text-xs ${colors.text} opacity-70`}>votes</p>
                   </div>
                 </div>
               )

@@ -71,6 +71,14 @@ export function removeMarkdown(text: string): string {
 }
 
 /**
+ * Removes all quotation marks from text
+ */
+export function removeQuotes(text: string): string {
+  return text
+    .replace(/["'""`]/g, "") // Remove all types of quotes (straight, curly, backticks)
+}
+
+/**
  * Ensures every line ends with a comma for rap flow
  */
 export function enforceCommas(text: string): string {
@@ -105,6 +113,7 @@ export function cleanRapText(text: string): string {
   let cleaned = text
   cleaned = removePreambles(cleaned)
   cleaned = removeMarkdown(cleaned)
+  cleaned = removeQuotes(cleaned)
   cleaned = enforceCommas(cleaned)
   return cleaned
 }

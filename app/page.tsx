@@ -66,12 +66,12 @@ export default function Home() {
         <div className="max-w-2xl w-full space-y-8 py-8 relative z-10">
           <div className="text-center space-y-4">
             <div className="flex items-center justify-center gap-3 mb-4">
-              <h1 className="text-6xl font-black text-white" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.3)" }}>
+              <h1 className="header text-6xl font-black text-white" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.3)" }}>
                 VersusAI
               </h1>
             </div>
             <Link href="/info">
-              <p className="text-lg text-white/80 hover:text-white cursor-pointer underline decoration-white/40 hover:decoration-white transition-colors">
+              <p className="subtext text-lg text-white/80 hover:text-white cursor-pointer underline decoration-white/40 hover:decoration-white transition-colors">
                 How does this work?
               </p>
             </Link>
@@ -86,9 +86,9 @@ export default function Home() {
                 <Button
                   onClick={handleStartBattle}
                   disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-700 hover:via-pink-700 hover:to-red-700 text-white font-bold text-xl py-8"
+                  className="header w-full bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-700 hover:via-pink-700 hover:to-red-700 text-white font-bold text-xl py-8"
                 >
-                  {isLoading ? "Starting..." : "LET'S GO! 🔥"}
+                  {isLoading ? "Starting..." : "LET'S GO!"}
                 </Button>
               </CardContent>
             </Card>

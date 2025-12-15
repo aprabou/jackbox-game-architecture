@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=BBH+Bartle&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=BBH+Bogle&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -122,4 +124,17 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* BBH Bartle Font */
+.header {
+  font-family: "BBH Bartle", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.subtext {
+  font-family: "BBH Bogle", sans-serif;
+  font-weight: 400;
+  font-style: normal;
 }

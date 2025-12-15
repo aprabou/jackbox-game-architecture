@@ -451,7 +451,7 @@ export default function BattleArena({ roomId, autostart = false, onNextRound }: 
                 <div className="flex justify-end pr-4 md:pr-8 lg:pr-16">
                   <div className="flex flex-col items-start space-y-4 max-w-2xl w-full md:w-2/3 lg:w-1/2">
                     {/* Model Name */}
-                    <h3 className="text-4xl font-black text-white">{model1.name}</h3>
+                    <h3 className="header text-4xl font-black text-white">{model1.name}</h3>
 
                     {/* Rap Verses */}
                     <div className="w-full min-h-[250px] bg-black/30 backdrop-blur-sm rounded-lg p-6">
@@ -479,7 +479,7 @@ export default function BattleArena({ roomId, autostart = false, onNextRound }: 
                 <div className="flex justify-start pl-4 md:pl-8 lg:pl-16">
                   <div className="flex flex-col items-start space-y-4 max-w-2xl w-full md:w-2/3 lg:w-1/2">
                     {/* Model Name */}
-                    <h3 className="text-4xl font-black text-white">{model2.name}</h3>
+                    <h3 className="header text-4xl font-black text-white">{model2.name}</h3>
 
                     {/* Rap Verses */}
                     <div className="w-full min-h-[250px] bg-black/30 backdrop-blur-sm rounded-lg p-6">
@@ -544,7 +544,7 @@ export default function BattleArena({ roomId, autostart = false, onNextRound }: 
 
       {/* Voting Section */}
       {battleState === "voting" && (
-        <div className="flex flex-col items-center space-y-6 mt-12 relative z-20">
+        <div className="subtext flex flex-col items-center space-y-6 mt-12 relative z-20">
           <h2 className="text-4xl font-black text-white">WHO WON?</h2>
           <div className="flex gap-6">
             {model1 && (
@@ -611,7 +611,7 @@ export default function BattleArena({ roomId, autostart = false, onNextRound }: 
       )}
 
       {/* Action Buttons */}
-      <div className="flex justify-center gap-4 relative z-20">
+      <div className="subtext flex justify-center gap-4 relative z-20">
         {/* Home Button - Always visible */}
         <Button
           onClick={handleGoHome}
