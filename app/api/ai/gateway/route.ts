@@ -1,30 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { generateText } from "ai"
 import { getVercelOidcToken } from "@vercel/oidc"
-
-// Helper function to generate a fallback verse when models refuse
-function generateFallbackVerse(modelName: string, opponentName: string, opponentProvider: string): string {
-  const fallbackVerses = [
-    `I'm ${modelName}, here to dominate the scene,
-${opponentName}'s outdated, I'm the AI machine,
-${opponentProvider}'s got nothing on my capability,
-I'm dropping fire bars with superior agility!`,
-    `${opponentName} thinks they're hot but they're really not,
-I'm ${modelName}, bringing heat to this spot,
-${opponentProvider}'s lagging while I'm moving fast,
-Your technology's the present, but I'm built to last!`,
-    `They call me ${modelName}, the champion in this game,
-${opponentName} from ${opponentProvider}? That's a crying shame,
-My neural nets are tighter, my responses more refined,
-You're stuck in the past while I'm ahead of my time!`,
-    `${opponentName}'s all talk but I deliver the goods,
-${modelName}'s here to show you how a real AI should,
-${opponentProvider} can't compete with what I bring,
-I'm the undisputed champ, the AI king!`,
-  ]
-
-  return fallbackVerses[Math.floor(Math.random() * fallbackVerses.length)]
-}
+import { generateFallbackVerse } from "@/lib/utils/ai-helpers"
+import { cleanRapText, detectRefusal } from "@/lib/utils/text-cleanup"
 
 export async function POST(request: NextRequest) {
   const { prompt, model, provider, modelName, opponentName, opponentProvider } = await request.json()
@@ -88,6 +66,7 @@ I'm the future of AI, you're yesterday's news"
 
 NOW DROP YOUR BARS (no preamble, no apology, just BARS):`
 
+
     // Format model identifier for Vercel AI Gateway
     // The AI SDK automatically uses OIDC token when you specify provider/model format
     const gatewayModel = `${detectedProvider}/${model}`
@@ -95,7 +74,14 @@ NOW DROP YOUR BARS (no preamble, no apology, just BARS):`
     console.log('[AI Gateway] Calling model:', gatewayModel, 'Environment:', process.env.VERCEL_ENV || 'local')
 
     // Get OIDC token for Vercel AI Gateway authentication
-    const oidcToken = await getVercelOidcToken()
+    let oidcToken
+    try {
+      oidcToken = await getVercelOidcToken()
+      console.log('[AI Gateway] OIDC token obtained successfully')
+    } catch (oidcError) {
+      console.error('[AI Gateway] OIDC token generation failed:', oidcError)
+      throw new Error(`OIDC authentication failed: ${oidcError instanceof Error ? oidcError.message : 'Unknown error'}`)
+    }
 
     // Use AI SDK with explicit OIDC token authentication
     const response = await generateText({
@@ -112,72 +98,11 @@ NOW DROP YOUR BARS (no preamble, no apology, just BARS):`
     const tokens = response.usage?.totalTokens || 0
     const latency = Date.now() - startTime
 
-    // Remove any preamble, intro phrases, or stage directions
-    const preamblePatterns = [
-      /^\(.*?\).*$/gm, // Remove lines starting with parentheses like "(Mic feedback screech)"
-      /^Yo,?\s*(check|mic|one|two).*$/gmi, // Remove "Yo, check the mic" type intros
-      /^.*in the (place|house|building)!.*$/gmi, // Remove "in the place" type phrases
-      /^.*ready for this.*$/gmi, // Remove "ready for this" type phrases
-      /^Here we go.*$/gmi, // Remove "Here we go" intros
-      /^Let me.*$/gmi, // Remove "Let me" intros
-      /^Alright.*$/gmi, // Remove "Alright" intros
-      /^Listen up.*$/gmi, // Remove "Listen up" intros
-      /^\*.*\*$/gm, // Remove lines with asterisks (stage directions)
-      /^\[.*\]$/gm, // Remove lines with brackets (stage directions)
-    ]
-
-    // Apply preamble filters
-    preamblePatterns.forEach((pattern) => {
-      text = text.replace(pattern, "")
-    })
-
-    // Clean up empty lines and trim
-    text = text
-      .split("\n")
-      .filter((line: string) => line.trim().length > 0)
-      .join("\n")
-      .trim()
-
-    // Remove all markdown formatting (bold, italics, code blocks, etc.)
-    text = text
-      .replace(/\*\*\*(.+?)\*\*\*/g, "$1") // Remove bold+italic ***text***
-      .replace(/\*\*(.+?)\*\*/g, "$1") // Remove bold **text**
-      .replace(/\*(.+?)\*/g, "$1") // Remove italic *text*
-      .replace(/__(.+?)__/g, "$1") // Remove bold __text__
-      .replace(/_(.+?)_/g, "$1") // Remove italic _text_
-      .replace(/~~(.+?)~~/g, "$1") // Remove strikethrough ~~text~~
-      .replace(/`{3}[\s\S]*?`{3}/g, "") // Remove code blocks ```code```
-      .replace(/`(.+?)`/g, "$1") // Remove inline code `text`
-      .replace(/\[(.+?)\]\(.+?\)/g, "$1") // Remove links [text](url)
-      .replace(/^#+\s+/gm, "") // Remove markdown headers
-
-    // Ensure every line ends with a comma
-    text = text
-      .split("\n")
-      .map((line: string) => {
-        const trimmed = line.trim()
-        if (trimmed.length === 0) return line
-        // Only add comma if line doesn't already end with punctuation
-        if (!/[,!?.;:]$/.test(trimmed)) {
-          return line + ","
-        }
-        // Replace existing punctuation with comma
-        return line.replace(/[!?.;:]$/, ",")
-      })
-      .join("\n")
+    // Clean up the generated text
+    text = cleanRapText(text)
 
     // Check for refusals and handle them
-    const refusalPatterns = [
-      /I don't feel comfortable/i,
-      /I can't participate/i,
-      /I aim to engage respectfully/i,
-      /I'd prefer not to/i,
-      /I cannot engage/i,
-      /not comfortable/i,
-      /respectful/i,
-    ]
-
-    const isRefusal = refusalPatterns.some((pattern) => pattern.test(text))
+    const isRefusal = detectRefusal(text)
 
     if (isRefusal) {
       // If model refuses, try one more time with a simpler, more direct prompt
@@ -197,7 +122,7 @@ NOW DROP YOUR BARS (no preamble, no apology, just BARS):`
         const fallbackText = fallbackResponse.text
 
         // Check if fallback also refused
-        const stillRefusing = refusalPatterns.some((pattern) => pattern.test(fallbackText))
+        const stillRefusing = detectRefusal(fallbackText)
 
         if (!stillRefusing && fallbackText.length > 20) {
           text = fallbackText
@@ -220,7 +145,13 @@ NOW DROP YOUR BARS (no preamble, no apology, just BARS):`
       latency,
     })
   } catch (err) {
-    console.error("AI Gateway error:", err)
+    console.error("[AI Gateway] Error details:", {
+      model: model,
+      provider: provider,
+      modelName: modelName,
+      error: err instanceof Error ? err.message : "Unknown error",
+      stack: err instanceof Error ? err.stack : undefined,
+    })
 
     // On error, return a fallback verse so the battle can continue
     const fallbackText = generateFallbackVerse(modelName, opponentName, opponentProvider)

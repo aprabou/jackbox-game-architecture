@@ -183,7 +183,7 @@ export default function BattleArena({ roomId, autostart = false, onNextRound }: 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         modelId: model.id,
-        prompt: "You are in a RAP BATTLE. Drop your hardest bars. Make it RHYME. I want your bars ONLY. 4 lines max. GO!",
+        prompt: "say 1",
         model: model.model_identifier,
         provider: model.provider,
         modelName: model.name,
