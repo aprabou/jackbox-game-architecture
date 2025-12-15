@@ -20,7 +20,9 @@ const getLogoImage = (provider: string) => {
     xai: "/groklogo.png",
     groq: "/metalogo.png",
     meta: "/metalogo.png",
+    nvidia: "/nvidialogo.svg"
   }
+
 
   return logoMap[providerLower] || "/claudelogo.png"
 }
@@ -55,6 +57,11 @@ const getModelColors = (provider: string) => {
       text: "text-[#0081FB]",
       border: "border-[#92AEFF]",
     },
+    nvidia: {
+      bg: "bg-[#000000]",
+      text: "text-[#ffffff]",
+      border: "border-[#76B900]"
+    }
   }
 
   return (

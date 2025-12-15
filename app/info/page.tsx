@@ -4,8 +4,41 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Github, Linkedin } from "lucide-react"
 import Link from "next/link"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
 
 export default function InfoPage() {
+
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+  const handleStartBattle = async () => {
+    setIsLoading(true)
+    const supabase = createClient()
+
+    try {
+      // Create a new battle session (room)
+      const { data, error } = await supabase
+        .from("rooms")
+        .insert({
+          room_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
+          host_session_id: "system",
+          state: "lobby", // Start in lobby, autostart will trigger the battle
+          settings: { mode: "ai_battle" },
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      router.push(`/battle/${data.id}?autostart=true`)
+    } catch (err) {
+      console.error("Failed to start battle:", err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <main
       className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
@@ -93,8 +126,9 @@ export default function InfoPage() {
                 </li>
                 <li className="flex items-start">
                   <span className="text-green-400 mr-2">✓</span>
-                  <span>Multiple AI models including GPT-4, Claude, Gemini, Grok, and Llama</span>
+                  <span>Multiple AI models including GPT-4, Claude, Gemini, and Nemotron</span>
                 </li>
+                <span>Want your favorite model to battle it out, or got a sick jam to rap on? Let me know what features you wanna see in the feedback form!</span>
               </ul>
             </CardContent>
           </Card>
@@ -185,7 +219,7 @@ export default function InfoPage() {
           {/* Back to Home Button */}
           <div className="flex justify-center pt-4">
             <Link href="/">
-              <Button className="header bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-700 hover:via-pink-700 hover:to-red-700 text-white font-bold text-xl py-6 px-12">
+              <Button onClick={handleStartBattle} className="header bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-700 hover:via-pink-700 hover:to-red-700 text-white font-bold text-xl py-6 px-12">
                 Start Watching Battles! 🔥
               </Button>
             </Link>

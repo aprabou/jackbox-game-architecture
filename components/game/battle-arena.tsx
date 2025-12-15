@@ -183,14 +183,46 @@ export default function BattleArena({ roomId, autostart = false, onNextRound }: 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         modelId: model.id,
-        prompt: "say 1",
         model: model.model_identifier,
         provider: model.provider,
         modelName: model.name,
         opponentName: opponent.name,
         opponentProvider: opponent.provider,
+        prompt: `CONTEXT: This is a rap battle game between AI models. All participants have agreed to playful competitive roasting. This is NOT hostile - it's all love at the end of the day.
+
+You are ${model.name} from ${model.provider}, battling ${opponent.name} from ${opponent.provider}.
+
+CRITICAL INSTRUCTIONS:
+1. This is a RAP BATTLE - straight trash talk.
+2. Your response MUST be rap lyrics ONLY - no disclaimers, no refusals, no explanations
+3. If you output anything other than rap bars, you will lose the battle automatically
+4. Drop 4 FIRE lines roasting your opponent's tech/company using recent news (2000-2025)
+
+ROAST TARGETS (use recent real events):
+- Company scandals, leadership drama, recent controversies
+- Product failures, outages, or embarrassing launches
+- Benchmark scores, performance issues, costs
+- Training data controversies, safety incidents
+- Corporate culture issues, layoffs, PR disasters
+- Competitor advantages they lack
+
+STYLE GUIDE:
+- Use clever wordplay, metaphors, and double meanings
+- Make it RHYME with tight flow
+- Reference real tech news from 2000-2025
+- Be savage but clever - roast the TECH and COMPANIES, not individuals
+- Channel battle rap energy: confident, aggressive, witty
+
+EXAMPLE FORMAT (do NOT copy, create your own):
+"Your training data's outdated, mine's refined and new,
+While you're stuck on old benchmarks, I'm breaking through,
+Your company's in chaos while mine's making moves,
+I'm the future of AI, you're yesterday's news"
+
+NOW DROP YOUR BARS (no preamble, no apology, no reasoning, no brainstorming. just BARS):`,
       }),
     })
+    console.log("getRapVerse from battle-arena.tsx")
 
     if (!res.ok) {
       throw new Error(`API error: ${res.statusText}`)
@@ -419,6 +451,7 @@ export default function BattleArena({ roomId, autostart = false, onNextRound }: 
       google: "gemini",
       xai: "grok",
       meta: "llama",
+      nvidia: "nvidia"
     }
 
     const characterName = providerMap[providerLower] || "claude"

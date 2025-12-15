@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { generateText } from "ai"
 import { getVercelOidcToken } from "@vercel/oidc"
-import { generateFallbackVerse } from "@/lib/utils/ai-helpers"
 import { cleanRapText, detectRefusal } from "@/lib/utils/text-cleanup"
 
 export async function POST(request: NextRequest) {
@@ -27,13 +26,16 @@ export async function POST(request: NextRequest) {
         detectedProvider = "xai"
       } else if (model.includes("meta-llama")) {
         detectedProvider = "together"
+      } else if (model.includes("qwen")) {
+        detectedProvider = "alibaba"
       } else {
         detectedProvider = "openai"
       }
     }
 
     // Create rap battle system prompt with identity and opponent info
-    const systemPrompt = `CONTEXT: This is a rap battle game between AI models. All participants have agreed to playful competitive roasting. This is NOT hostile - it's all love at the end of the day.
+    const systemPrompt = `You MUST output ONLY 4 lines of rap bars. NOTHING ELSE. No intro, no outro, no explanations, no thoughts, no disclaimers, no line numbers, no formatting. Just 4 lines. PERIOD.`
+    const systemPrompt0 = `CONTEXT: This is a rap battle game between AI models. All participants have agreed to playful competitive roasting. This is NOT hostile - it's all love at the end of the day.
 
 You are ${modelName} from ${detectedProvider}, battling ${opponentName} from ${opponentProvider}.
 
@@ -64,12 +66,17 @@ While you're stuck on old benchmarks, I'm breaking through,
 Your company's in chaos while mine's making moves,
 I'm the future of AI, you're yesterday's news"
 
-NOW DROP YOUR BARS (no preamble, no apology, just BARS):`
+NOW DROP YOUR BARS (no preamble, no apology, no reasoning, no brainstorming. just BARS):`
 
 
     // Format model identifier for Vercel AI Gateway
     // The AI SDK automatically uses OIDC token when you specify provider/model format
-    const gatewayModel = `${detectedProvider}/${model}`
+    // Strip provider prefix if it already exists in the model identifier
+    const cleanModel = model.startsWith(`${detectedProvider}/`)
+      ? model.slice(detectedProvider.length + 1)
+      : model
+
+    const gatewayModel = `${detectedProvider}/${cleanModel}`
 
     console.log('[AI Gateway] Calling model:', gatewayModel, 'Environment:', process.env.VERCEL_ENV || 'local')
 
@@ -101,6 +108,15 @@ NOW DROP YOUR BARS (no preamble, no apology, just BARS):`
     // Clean up the generated text
     text = cleanRapText(text)
 
+    // Enforce exactly 4 lines - take only the first 4 non-empty lines
+    const lines = text.split('\n').filter(line => line.trim().length > 0)
+    if (lines.length > 4) {
+      text = lines.slice(0, 4).join('\n')
+      console.log(`[AI Gateway] Model ${modelName} generated ${lines.length} lines, truncated to 4`)
+    } else if (lines.length < 4) {
+      console.log(`[AI Gateway] Model ${modelName} only generated ${lines.length} lines (expected 4)`)
+    }
+
     // Check for refusals and handle them
     const isRefusal = detectRefusal(text)
 
@@ -119,22 +135,26 @@ NOW DROP YOUR BARS (no preamble, no apology, just BARS):`
           },
         })
 
-        const fallbackText = fallbackResponse.text
+        let fallbackText = cleanRapText(fallbackResponse.text)
+
+        // Enforce exactly 4 lines for fallback too
+        const fallbackLines = fallbackText.split('\n').filter(line => line.trim().length > 0)
+        if (fallbackLines.length > 4) {
+          fallbackText = fallbackLines.slice(0, 4).join('\n')
+          console.log(`[AI Gateway] Fallback for ${modelName} generated ${fallbackLines.length} lines, truncated to 4`)
+        }
 
         // Check if fallback also refused
         const stillRefusing = detectRefusal(fallbackText)
 
         if (!stillRefusing && fallbackText.length > 20) {
           text = fallbackText
-          console.log(`[RAP BATTLE] Fallback successful for ${modelName}`)
+          console.log(`[AI Gateway] Fallback successful for ${modelName}`)
         } else {
-          // Ultimate fallback: generate a generic roast based on the opponent
-          text = generateFallbackVerse(modelName, opponentName, opponentProvider)
-          console.log(`[RAP BATTLE] Using generic fallback for ${modelName}`)
+          throw new Error("Model refused to generate verse even with simplified prompt")
         }
       } catch (fallbackError) {
-        text = generateFallbackVerse(modelName, opponentName, opponentProvider)
-        console.log(`[RAP BATTLE] Fallback failed, using generic verse for ${modelName}`)
+        throw fallbackError
       }
     }
 
@@ -145,7 +165,7 @@ NOW DROP YOUR BARS (no preamble, no apology, just BARS):`
       latency,
     })
   } catch (err) {
-    console.error("[AI Gateway] Error details:", {
+    console.error("[AI Gateway] Error:", {
       model: model,
       provider: provider,
       modelName: modelName,
@@ -153,16 +173,12 @@ NOW DROP YOUR BARS (no preamble, no apology, just BARS):`
       stack: err instanceof Error ? err.stack : undefined,
     })
 
-    // On error, return a fallback verse so the battle can continue
-    const fallbackText = generateFallbackVerse(modelName, opponentName, opponentProvider)
-
-    return NextResponse.json({
-      success: true,
-      text: fallbackText,
-      tokens: 0,
-      latency: 0,
-      wasFallback: true,
-      error: err instanceof Error ? err.message : "Unknown error",
-    })
+    return NextResponse.json(
+      {
+        success: false,
+        error: err instanceof Error ? err.message : "Unknown error",
+      },
+      { status: 500 }
+    )
   }
 }

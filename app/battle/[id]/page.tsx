@@ -97,7 +97,7 @@ export default function BattlePage() {
         {/* Battle header */}
         <div className="mb-8 text-center">
           <h1 className="header text-5xl font-black text-white mb-2" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.3)" }}>
-            VerseAI
+            VersusAI
           </h1>
         </div>
 
