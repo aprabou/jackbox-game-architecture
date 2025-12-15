@@ -27,6 +27,24 @@ export const metadata: Metadata = {
     ],
     apple: '/apple-icon.png',
   },
+  openGraph: {
+    title: 'VersusAI',
+    description: 'Rap Battle Between AI Models! Created with v0',
+    images: [
+      {
+        url: '/thumbnail.png',
+        width: 1200,
+        height: 630,
+        alt: 'VersusAI - AI Rap Battle',
+      }
+    ], type: 'website'
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'VersusAI',
+    description: 'Rap Battle Between AI Models! Created with v0',
+    images: ['/thumbnail.png'],
+  }
 }
 
 export default function RootLayout({
