@@ -15,6 +15,8 @@ const BACKGROUNDS = [
   "/gptbg.png",
   "/grokbg.png",
   "/vscodebg.png",
+  "/vercelhq.jpg",
+  "/nvidiahq.jpg",
 ]
 
 export default function BattlePage() {

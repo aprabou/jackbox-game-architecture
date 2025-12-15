@@ -56,22 +56,22 @@ export default function Home() {
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
         {/* Character Images */}
-        <div className="absolute left-4 top-1/2 -translate-y-1/3 -translate-x-40 z-10 hidden xl:block">
+        <div className="absolute left-4 top-1/2 -translate-y-1/3 -translate-x-40 z-10 hidden xl:block animate-fade-in animation-delay-300">
           <img src="/characters/claude_rap.png" alt="Claude" className="w-196 h-auto" />
         </div>
-        <div className="absolute right-4 top-1/2 -translate-y-1/3 translate-x-40 z-10 hidden xl:block">
+        <div className="absolute right-4 top-1/2 -translate-y-1/3 translate-x-40 z-10 hidden xl:block animate-fade-in animation-delay-400">
           <img src="/characters/gpt_rap.png" alt="GPT" className="w-196 h-auto" />
         </div>
 
         <div className="max-w-2xl w-full space-y-8 py-8 relative z-10">
           <div className="text-center space-y-4">
-            <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="flex items-center justify-center gap-3 mb-4 animate-fade-in-up">
               <h1 className="header text-6xl font-black text-white" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.3)" }}>
                 VersusAI
               </h1>
             </div>
             <Link href="/info">
-              <p className="subtext text-lg text-white/80 hover:text-white cursor-pointer underline decoration-white/40 hover:decoration-white transition-colors">
+              <p className="subtext text-lg text-white/80 hover:text-white cursor-pointer underline decoration-white/40 hover:decoration-white transition-colors animate-fade-in-up animation-delay-100">
                 How does this work?
               </p>
             </Link>
@@ -79,7 +79,7 @@ export default function Home() {
 
           <div className="space-y-6">
             {/* Start Watching Card */}
-            <Card className="border-0 shadow-2xl bg-transparent">
+            <Card className="border-0 shadow-2xl bg-transparent animate-fade-in-up animation-delay-200">
               <CardHeader>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -94,7 +94,9 @@ export default function Home() {
             </Card>
 
             {/* Leaderboard */}
-            <Leaderboard />
+            <div className="animate-fade-in-up animation-delay-300">
+              <Leaderboard />
+            </div>
           </div>
         </div>
       </main>

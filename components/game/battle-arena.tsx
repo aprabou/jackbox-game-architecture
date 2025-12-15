@@ -39,6 +39,35 @@ export default function BattleArena({ roomId, autostart = false, onNextRound }: 
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<boolean>(false)
   const hasAutoStartedRef = useRef(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [voicesLoaded, setVoicesLoaded] = useState(false)
+  const audioContextRef = useRef<AudioContext | null>(null)
+
+  // Load voices on mount
+  useEffect(() => {
+    if (!window.speechSynthesis) {
+      console.error("[VOICE] Speech Synthesis not available")
+      return
+    }
+
+    // Function to load voices
+    const loadVoices = () => {
+      const voices = window.speechSynthesis.getVoices()
+      console.log(`[VOICE] Voices loaded: ${voices.length}`)
+      if (voices.length > 0) {
+        setVoicesLoaded(true)
+      }
+    }
+
+    // Load voices immediately
+    loadVoices()
+
+    // Also listen for voiceschanged event (some browsers load voices asynchronously)
+    window.speechSynthesis.addEventListener('voiceschanged', loadVoices)
+
+    return () => {
+      window.speechSynthesis.removeEventListener('voiceschanged', loadVoices)
+    }
+  }, [])
 
   // Auto-start battle when autostart prop is true
   useEffect(() => {
@@ -255,45 +284,116 @@ NOW DROP YOUR BARS (no preamble, no apology, no reasoning, no brainstorming. jus
     }
   }
 
-  const speakText = (text: string): void => {
-    // Check if speech synthesis is available
-    if (!window.speechSynthesis) {
-      return
+  // Create a beep sound effect
+  const playBeep = () => {
+    // Initialize audio context if needed
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
     }
 
-    // Fix pronunciation issues by replacing problematic text
-    let spokenText = text
-      // Fix "GPT-4o" to be pronounced correctly
-      .replace(/GPT-4o/gi, "G P T 4 oh")
-      .replace(/GPT-4/gi, "G P T 4")
-      .replace(/GPT/gi, "G P T")
-      // Fix "xAI" or "XAI" to be pronounced as "X A I"
-      .replace(/\bxAI\b/gi, "X A I")
-      .replace(/\bXAI\b/gi, "X A I")
-      // Fix other common model name pronunciation issues
-      .replace(/Claude/gi, "Clawed")
-      .replace(/Gemini/gi, "Gem In Eye")
-      .replace(/Llama/gi, "Llama")
-      .replace(/Grok/gi, "Grock")
+    const ctx = audioContextRef.current
+    const oscillator = ctx.createOscillator()
+    const gainNode = ctx.createGain()
 
-    const utterance = new SpeechSynthesisUtterance(spokenText)
+    oscillator.connect(gainNode)
+    gainNode.connect(ctx.destination)
 
-    // Set voice properties for faster rap-style delivery
-    utterance.rate = 1.2 // Much faster for rap flow
-    utterance.pitch = 1.0
-    utterance.volume = 1.0
+    // Configure the beep sound
+    oscillator.frequency.value = 800 // Frequency in Hz (higher = higher pitch)
+    oscillator.type = 'sine' // Sine wave for a clean beep
 
-    // Try to get available voices - always use first voice (same for both models)
-    const voices = window.speechSynthesis.getVoices()
-    if (voices.length > 0) {
-      const voicesList = voices.filter(voice => voice.lang.startsWith('en'))
-      if (voicesList.length > 0) {
-        // Always use the same voice (index 0) for consistency
-        utterance.voice = voicesList[0]
+    // Set volume envelope (quick fade out)
+    gainNode.gain.setValueAtTime(0.1, ctx.currentTime) // Start at low volume
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05) // Quick fade
+
+    // Play for 50ms
+    oscillator.start(ctx.currentTime)
+    oscillator.stop(ctx.currentTime + 0.05)
+  }
+
+  const speakText = (text: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      // Check if speech synthesis is available
+      if (!window.speechSynthesis) {
+        console.error("[VOICE] Speech Synthesis API not available in this browser")
+        setError("Voice not supported in this browser")
+        reject(new Error("Speech Synthesis not available"))
+        return
       }
-    }
 
-    window.speechSynthesis.speak(utterance)
+      console.log("[VOICE] Starting speech synthesis...")
+
+      // Fix pronunciation issues by replacing problematic text
+      let spokenText = text
+        // Fix "GPT-4o" to be pronounced correctly
+        .replace(/GPT-4o/gi, "G P T 4 oh")
+        .replace(/GPT-4/gi, "G P T 4")
+        .replace(/GPT/gi, "G P T")
+        // Fix "xAI" or "XAI" to be pronounced as "X A I"
+        .replace(/\bxAI\b/gi, "X A I")
+        .replace(/\bXAI\b/gi, "X A I")
+        // Fix other common model name pronunciation issues
+        .replace(/Claude/gi, "Clawed")
+        .replace(/Gemini/gi, "Gem In Eye")
+        .replace(/Llama/gi, "Llama")
+        .replace(/Grok/gi, "Grock")
+
+      const utterance = new SpeechSynthesisUtterance(spokenText)
+
+      // Set voice properties for faster rap-style delivery
+      utterance.rate = 1.2 // Much faster for rap flow
+      utterance.pitch = 1.0
+      utterance.volume = 1.0
+
+      // Error handling for utterance
+      utterance.onerror = (event) => {
+        console.error("[VOICE] Speech synthesis error:", event.error)
+        console.error("[VOICE] Error details:", event)
+        // Don't reject if interrupted - this is expected when starting new speech
+        if (event.error !== "interrupted") {
+          reject(new Error(`Speech synthesis failed: ${event.error}`))
+        } else {
+          resolve() // Treat interruption as completion
+        }
+      }
+
+      utterance.onend = () => {
+        console.log("[VOICE] Speech synthesis completed successfully")
+        resolve()
+      }
+
+      utterance.onstart = () => {
+        console.log("[VOICE] Speech synthesis started")
+      }
+
+      // Try to get available voices - always use first voice (same for both models)
+      const voices = window.speechSynthesis.getVoices()
+      console.log(`[VOICE] Available voices: ${voices.length}`)
+
+      if (voices.length > 0) {
+        const voicesList = voices.filter(voice => voice.lang.startsWith('en'))
+        console.log(`[VOICE] English voices: ${voicesList.length}`)
+
+        if (voicesList.length > 0) {
+          // Always use the same voice (index 0) for consistency
+          utterance.voice = voicesList[0]
+          console.log(`[VOICE] Using voice: ${voicesList[0].name} (${voicesList[0].lang})`)
+        } else {
+          console.warn("[VOICE] No English voices available, using default")
+        }
+      } else {
+        console.warn("[VOICE] No voices available yet, using default voice")
+      }
+
+      // Cancel any ongoing speech before starting new one (if speaking)
+      if (window.speechSynthesis.speaking) {
+        console.log("[VOICE] Cancelling previous speech")
+        window.speechSynthesis.cancel()
+      }
+
+      console.log("[VOICE] Speaking text:", spokenText.substring(0, 50) + "...")
+      window.speechSynthesis.speak(utterance)
+    })
   }
 
   const animateVerse = async (
@@ -309,14 +409,20 @@ NOW DROP YOUR BARS (no preamble, no apology, no reasoning, no brainstorming. jus
     // Split verse into lines
     const lines = verse.split("\n").filter((line) => line.trim().length > 0)
 
-    // Start playing the Web Speech API audio
-    // Audio plays independently while text animates
-    speakText(verse)
+    // TEMPORARY: Using beep sounds instead of speech API
+    // TODO: Re-enable speech API when browser issues are resolved
+    // try {
+    //   speakText(verse).catch((err) => {
+    //     console.error("[VOICE] Failed to speak:", err)
+    //   })
+    // } catch (err) {
+    //   console.error("[VOICE] Exception in speakText:", err)
+    // }
 
     // Record start time for beat sync
     const startTime = Date.now()
 
-    // Typing animation: show each character one by one
+    // Typing animation: show each character one by one with beep sounds
     let currentLineIndex = 0
     let currentText = ""
 
@@ -335,6 +441,15 @@ NOW DROP YOUR BARS (no preamble, no apology, no reasoning, no brainstorming. jus
           currentLineIndex: currentLineIndex,
           isComplete: false,
         })
+
+        // Play beep sound for each character (except spaces)
+        if (charIndex < line.length && line[charIndex].trim() !== '') {
+          try {
+            playBeep()
+          } catch (err) {
+            console.error("[BEEP] Failed to play beep:", err)
+          }
+        }
 
         // Typing speed: 30ms per character
         await new Promise((resolve) => setTimeout(resolve, 30))

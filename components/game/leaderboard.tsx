@@ -76,28 +76,52 @@ const getModelColors = (provider: string) => {
 export default function Leaderboard({ roomId }: LeaderboardProps) {
   const supabase = createClient()
   const [standings, setStandings] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const fetchStandings = async () => {
       try {
-        // Get all models with their total votes
+        setIsLoading(true)
+
+        // More efficient approach: Get models and votes in separate queries
         const { data: models } = await supabase
           .from("models")
-          .select("*, submissions(votes(id))")
+          .select("*")
           .eq("is_enabled", true)
 
-        if (models) {
-          const standings = models
-            .map((model) => {
-              const totalVotes = model.submissions.reduce((sum: number, sub: any) => sum + (sub.votes?.length || 0), 0)
-              return { ...model, totalVotes }
-            })
-            .sort((a, b) => b.totalVotes - a.totalVotes)
-
-          setStandings(standings)
+        if (!models) {
+          setIsLoading(false)
+          return
         }
+
+        // Get vote counts for each model efficiently using aggregation
+        const { data: voteCounts } = await supabase
+          .from("submissions")
+          .select("model_id, votes(id)")
+
+        // Create a map of model_id to vote count
+        const voteCountMap = new Map<string, number>()
+        if (voteCounts) {
+          voteCounts.forEach((submission: any) => {
+            const modelId = submission.model_id
+            const votes = submission.votes?.length || 0
+            voteCountMap.set(modelId, (voteCountMap.get(modelId) || 0) + votes)
+          })
+        }
+
+        // Combine models with their vote counts
+        const standings = models
+          .map((model: any) => ({
+            ...model,
+            totalVotes: voteCountMap.get(model.id) || 0
+          }))
+          .sort((a: any, b: any) => b.totalVotes - a.totalVotes)
+
+        setStandings(standings)
       } catch (err) {
         console.error("[LEADERBOARD] Failed to fetch standings:", err)
+      } finally {
+        setIsLoading(false)
       }
     }
 
@@ -124,7 +148,11 @@ export default function Leaderboard({ roomId }: LeaderboardProps) {
         <CardTitle className="subtext text-center text-2xl text-white">Model Leaderboard</CardTitle>
       </CardHeader>
       <CardContent>
-        {standings.length === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+          </div>
+        ) : standings.length === 0 ? (
           <p className="text-center text-gray-500 py-8">No battles yet. Start watching to see the leaderboard!</p>
         ) : (
           <div className="space-y-3">
